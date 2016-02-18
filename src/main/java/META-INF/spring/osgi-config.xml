@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:osgi="http://www.springframework.org/schema/osgi"	
+		xmlns:aop="http://www.springframework.org/schema/aop"
+		xsi:schemaLocation="http://www.springframework.org/schema/beans
+							http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+							http://www.springframework.org/schema/osgi
+							http://www.springframework.org/schema/osgi/spring-osgi-1.2.xsd
+							http://www.springframework.org/schema/aop 
+       						http://www.springframework.org/schema/aop/spring-aop-3.1.xsd">
+
+
+	<osgi:service id="NWBModelExporter" ref="nwbModelInterpreter"
+		interface="org.geppetto.core.model.IModelInterpreter">
+	</osgi:service>
+	<bean id="nwbModelInterpreter" scope="prototype" class="org.geppetto.model.nwb.NWBModelInterpreterService">
+	<aop:scoped-proxy proxy-target-class="false"/>
+	</bean>
+	
+	
+	<bean id="eventListenerBean" class="org.geppetto.core.services.registry.ApplicationListenerBean" />
+	
+</beans>
