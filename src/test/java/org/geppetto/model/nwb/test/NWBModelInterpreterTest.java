@@ -32,8 +32,22 @@
  *******************************************************************************/
 package org.geppetto.model.nwb.test;
 
+import java.net.URL;
+
+import org.geppetto.core.common.GeppettoInitializationException;
+import org.geppetto.core.manager.SharedLibraryManager;
+import org.geppetto.core.model.GeppettoModelAccess;
+import org.geppetto.core.model.ModelInterpreterException;
 import org.geppetto.core.services.registry.ServicesRegistry;
+import org.geppetto.model.GeppettoFactory;
+import org.geppetto.model.GeppettoLibrary;
+import org.geppetto.model.GeppettoModel;
+import org.geppetto.model.nwb.NWBModelInterpreterService;
+import org.geppetto.model.types.Type;
+import org.geppetto.model.util.GeppettoVisitingException;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author matteocantarelli
@@ -51,6 +65,22 @@ public class NWBModelInterpreterTest
 		ServicesRegistry.registerModelFormat("NWB");
 	}
 
-	
+	@Test
+	public void testReadNWB() throws ModelInterpreterException, GeppettoInitializationException, GeppettoVisitingException
+	{
+		NWBModelInterpreterService nwbModelInterpreter = new NWBModelInterpreterService();
+		URL nwbFile = this.getClass().getResource("/nwbSample.nwb");
+		GeppettoLibrary library = GeppettoFactory.eINSTANCE.createGeppettoLibrary();
+		library.setId("NWB");
+		GeppettoLibrary commonLibrary = SharedLibraryManager.getSharedCommonLibrary();
+		GeppettoModel geppettoModel = GeppettoFactory.eINSTANCE.createGeppettoModel();
+		geppettoModel.getLibraries().add(library);
+		geppettoModel.getLibraries().add(commonLibrary);
+		GeppettoModelAccess commonLibraryAccess = new GeppettoModelAccess(geppettoModel);
+
+		Type nwbType = nwbModelInterpreter.importType(nwbFile, "testName", library, commonLibraryAccess);
+		Assert.assertNotNull(nwbType);
+		//test that everything that should be extracted is available through the type
+	}
 
 }

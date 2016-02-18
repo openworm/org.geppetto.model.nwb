@@ -47,8 +47,16 @@ import org.geppetto.core.model.ModelInterpreterException;
 import org.geppetto.core.services.registry.ServicesRegistry;
 import org.geppetto.model.GeppettoLibrary;
 import org.geppetto.model.ModelFormat;
+import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.Type;
+import org.geppetto.model.types.TypesFactory;
+import org.geppetto.model.types.TypesPackage;
+import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.values.Pointer;
+import org.geppetto.model.values.Text;
+import org.geppetto.model.values.ValuesFactory;
+import org.geppetto.model.variables.Variable;
+import org.geppetto.model.variables.VariablesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -94,12 +102,38 @@ public class NWBModelInterpreterService extends AModelInterpreter
 	{
 
 		dependentModels.clear();
+		
+		CompositeType nwcModelType = TypesFactory.eINSTANCE.createCompositeType();
 
-		Type nwcModeType = null;
+		try
+		{
+			
 
-		// Nitesh: convert from NWB to Type
+			// Nitesh: convert from NWB to Type
+			// 1 - Open the NWB file using the HDF5Reader
+			// 2 - Extract from the NWB the information as per Rick email
+			// a) create root CompositeType
+			// b) iterate the H5File and build the subtypes for the different nodes
+			// c) create TimeSeries variable/values for the Time series data, text/url/html variables for the rest
 
-		return nwcModeType;
+			
+			//Sample pattern for populating the type
+			Variable description = VariablesFactory.eINSTANCE.createVariable();
+			Type textType=commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
+			description.getTypes().add(textType);
+			Text descriptionValue=ValuesFactory.eINSTANCE.createText();
+			descriptionValue.setText("This is a description found inside the NWB file");
+			description.getInitialValues().put(textType, descriptionValue);
+			
+			nwcModelType.getVariables().add(description);
+			
+		}
+		catch(GeppettoVisitingException e)
+		{
+			throw new ModelInterpreterException(e);
+		}
+
+		return nwcModelType;
 
 	}
 
