@@ -54,6 +54,7 @@ import org.geppetto.model.types.TypesPackage;
 import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.values.Pointer;
 import org.geppetto.model.values.Text;
+import org.geppetto.model.values.TimeSeries;
 import org.geppetto.model.values.ValuesFactory;
 import org.geppetto.model.variables.Variable;
 import org.geppetto.model.variables.VariablesFactory;
@@ -160,15 +161,20 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			
 			
 			
-			//Sample pattern for populating the type
-			Variable description = VariablesFactory.eINSTANCE.createVariable();
-			Type textType=commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
-			description.getTypes().add(textType);
-			Text descriptionValue=ValuesFactory.eINSTANCE.createText();
-			descriptionValue.setText("This is a description found inside the NWB file");
-			description.getInitialValues().put(textType, descriptionValue);
+
+			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
+			stimulus.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
+			stimulus.setId("stimulus");
+			stimulus.setName("stimulus");
 			
-			nwcModelType.getVariables().add(description);
+			TimeSeries stimulusTimeSeries=ValuesFactory.eINSTANCE.createTimeSeries();
+			stimulusTimeSeries.getValue().addAll(Arrays.asList(nwbObj.stimulus));
+			
+			stimulus.getInitialValues().put(
+					commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
+					stimulusTimeSeries);
+			
+			nwcModelType.getVariables().add(stimulus);
 			
 			
 			
