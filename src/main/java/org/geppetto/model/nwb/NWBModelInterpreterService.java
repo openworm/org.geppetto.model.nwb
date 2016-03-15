@@ -115,7 +115,50 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			// a) create root CompositeType
 			// b) iterate the H5File and build the subtypes for the different nodes
 			// c) create TimeSeries variable/values for the Time series data, text/url/html variables for the rest
-
+			
+			//H5File file = HDF5Reader.readHDF5File(new File("./src/test/resources/H5DatasetCreate.h5").toURI().toURL(),-1l);
+			//Sample pattern for populating the type
+			/* Getting data from NWB*/
+			//logger.debug("Logging on to the server for the first time");
+			
+			
+			GetNWBData nwb = new GetNWBData("313862020.nwb");
+			//System.out.println(nwb.file_name);
+		    ArrayList<Integer> all_sweep_nums = nwb.get_sweep_numbers();
+		    int sweep_number =  all_sweep_nums.get(1);
+		    //System.out.println(sweep_number);
+		    NWBObject nwbObj = nwb.get_sweep(sweep_number); 
+		    for(int i=0; i<nwbObj.stimulus.length; i++){
+		    	nwbObj.stimulus[i] =  nwbObj.stimulus[i] * 1000000000000.0; // converting to pA, response -> current
+	       }
+	       for(int i=0; i<nwbObj.response.length; i++){
+	    	   nwbObj.response[i] = nwbObj.response[i] * 1000.0; // converting to mV, response -> voltage 
+	    	 }
+	       double dt = 1.0 / nwbObj.sampling_rate;
+	       System.out.println(dt);
+	       double [] t = new double[nwbObj.response.length];
+	       for(int i=0; i<nwbObj.response.length; i++) // generating time axis A.P.
+	       {
+	    	   t[i] = (i*dt);
+	       }
+	       
+	       		for(int i=0; i<3000; i++){
+	    	   		System.out.println(i + "   " + nwbObj.stimulus[i]); // current
+	       		}
+	       		
+	       	
+	       		/*for(int i=0; i<3000; i++){
+	    	   		System.out.println(i + "   " + nwbObj.response[i]); //voltage
+	       		}*/
+	       		
+	       		/*for(int i=0; i<=50000; i++){
+	    	    System.out.println(i + "   " + t[i]); //voltage
+	       		} 
+	       	*/
+			//H5File file = HDF5Reader.readHDF5File(new File("./src/test/resources/H5DatasetCreate.h5").toURI().toURL(),-1l);
+			
+			
+			
 			
 			//Sample pattern for populating the type
 			Variable description = VariablesFactory.eINSTANCE.createVariable();
@@ -126,6 +169,9 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			description.getInitialValues().put(textType, descriptionValue);
 			
 			nwcModelType.getVariables().add(description);
+			
+			
+			
 			
 		}
 		catch(GeppettoVisitingException e)
