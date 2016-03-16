@@ -34,12 +34,19 @@
 package org.geppetto.model.nwb;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import ncsa.hdf.object.h5.H5File;
+import ncsa.hdf.utils.SetNatives;
+
 import org.geppetto.core.beans.ModelInterpreterConfig;
+import org.geppetto.core.common.GeppettoExecutionException;
+import org.geppetto.core.common.HDF5Reader;
 import org.geppetto.core.data.model.IAspectConfiguration;
 import org.geppetto.core.model.AModelInterpreter;
 import org.geppetto.core.model.GeppettoModelAccess;
@@ -50,14 +57,7 @@ import org.geppetto.model.ModelFormat;
 import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.Type;
 import org.geppetto.model.types.TypesFactory;
-import org.geppetto.model.types.TypesPackage;
-import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.values.Pointer;
-import org.geppetto.model.values.Text;
-import org.geppetto.model.values.TimeSeries;
-import org.geppetto.model.values.ValuesFactory;
-import org.geppetto.model.variables.Variable;
-import org.geppetto.model.variables.VariablesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -101,68 +101,34 @@ public class NWBModelInterpreterService extends AModelInterpreter
 	@Override
 	public Type importType(URL url, String typeName, GeppettoLibrary library, GeppettoModelAccess commonLibraryAccess) throws ModelInterpreterException
 	{
-
 		dependentModels.clear();
-		
 		CompositeType nwcModelType = TypesFactory.eINSTANCE.createCompositeType();
-
 		try
 		{
-			
-
 			// Nitesh: convert from NWB to Type
 			// 1 - Open the NWB file using the HDF5Reader
 			// 2 - Extract from the NWB the information as per Rick email
 			// a) create root CompositeType
 			// b) iterate the H5File and build the subtypes for the different nodes
 			// c) create TimeSeries variable/values for the Time series data, text/url/html variables for the rest
-			
-			//H5File file = HDF5Reader.readHDF5File(new File("./src/test/resources/H5DatasetCreate.h5").toURI().toURL(),-1l);
-			//Sample pattern for populating the type
-			/* Getting data from NWB*/
-			//logger.debug("Logging on to the server for the first time");
-			
-			
-			GetNWBData nwb = new GetNWBData("313862020.nwb");
-			//System.out.println(nwb.file_name);
-		    ArrayList<Integer> all_sweep_nums = nwb.get_sweep_numbers();
-		    int sweep_number =  all_sweep_nums.get(1);
-		    //System.out.println(sweep_number);
-		    NWBObject nwbObj = nwb.get_sweep(sweep_number); 
-		    for(int i=0; i<nwbObj.stimulus.length; i++){
-		    	nwbObj.stimulus[i] =  nwbObj.stimulus[i] * 1000000000000.0; // converting to pA, response -> current
-	       }
-	       for(int i=0; i<nwbObj.response.length; i++){
-	    	   nwbObj.response[i] = nwbObj.response[i] * 1000.0; // converting to mV, response -> voltage 
-	    	 }
-	       double dt = 1.0 / nwbObj.sampling_rate;
-	       System.out.println(dt);
-	       double [] t = new double[nwbObj.response.length];
-	       for(int i=0; i<nwbObj.response.length; i++) // generating time axis A.P.
-	       {
-	    	   t[i] = (i*dt);
-	       }
-	       
-	       		for(int i=0; i<3000; i++){
-	    	   		System.out.println(i + "   " + nwbObj.stimulus[i]); // current
-	       		}
-	       		
-	       	
-	       		/*for(int i=0; i<3000; i++){
-	    	   		System.out.println(i + "   " + nwbObj.response[i]); //voltage
-	       		}*/
-	       		
-	       		/*for(int i=0; i<=50000; i++){
-	    	    System.out.println(i + "   " + t[i]); //voltage
-	       		} 
-	       	*/
-			//H5File file = HDF5Reader.readHDF5File(new File("./src/test/resources/H5DatasetCreate.h5").toURI().toURL(),-1l);
-			
-			
-			
-			
-
-			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
+			try {
+				SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			String file_path = "./src/main/resources/354190011.nwb";
+			H5File nwbFile = HDF5Reader.readHDF5File(new File(file_path).toURI().toURL(),-1l);
+			ReadNWBFile reader = new ReadNWBFile();
+			String path  = "/epochs/Sweep_0";	// path should point to data set in which you are interested.
+			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
+			NWBObject nwbObject = reader.readNWBFile(path, nwbFile);
+			double dt = nwbObject.sampling_rate;
+			double [] t = new double[nwbObject.response.length];
+		    for(int i=0; i<nwbObject.response.length; i++) // generating time axis A.P.
+		    	t[i] = (i*dt);
+		      
+		
+			/*	Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
 			stimulus.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
 			stimulus.setId("stimulus");
 			stimulus.setName("stimulus");
@@ -174,17 +140,22 @@ public class NWBModelInterpreterService extends AModelInterpreter
 					commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
 					stimulusTimeSeries);
 			
-			nwcModelType.getVariables().add(stimulus);
-			
-			
-			
+			nwcModelType.getVariables().add(stimulus); */	
 			
 		}
-		catch(GeppettoVisitingException e)
-		{
-			throw new ModelInterpreterException(e);
+		catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-
+//		catch (HDF5Exception e)
+//		{
+//			System.out.println("Exception while reading HDF5 file");
+//			e.printStackTrace();
+		//}
+		catch (GeppettoExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return nwcModelType;
 
 	}
