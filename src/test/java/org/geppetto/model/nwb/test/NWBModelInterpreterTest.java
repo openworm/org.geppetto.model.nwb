@@ -32,9 +32,17 @@
  *******************************************************************************/
 package org.geppetto.model.nwb.test;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 
+import ncsa.hdf.object.h5.H5File;
+import ncsa.hdf.utils.SetNatives;
+
+import org.geppetto.core.common.GeppettoExecutionException;
 import org.geppetto.core.common.GeppettoInitializationException;
+import org.geppetto.core.common.HDF5Reader;
 import org.geppetto.core.manager.SharedLibraryManager;
 import org.geppetto.core.model.GeppettoModelAccess;
 import org.geppetto.core.model.ModelInterpreterException;
@@ -63,8 +71,21 @@ public class NWBModelInterpreterTest
 	public void setUp() throws Exception
 	{
 		ServicesRegistry.registerModelFormat("NWB");
+		try {
+			SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
+	@Test
+	public void testExample4() throws MalformedURLException, GeppettoExecutionException
+	{
+		//this.setup();
+		H5File file=HDF5Reader.readHDF5File(new File("./src/main/resources/354190011.nwb").toURI().toURL(),-1l);
+		Assert.assertNotNull(file);
+	}
+	
 	@Test
 	public void testReadNWB() throws ModelInterpreterException, GeppettoInitializationException, GeppettoVisitingException
 	{
@@ -81,6 +102,7 @@ public class NWBModelInterpreterTest
 		Type nwbType = nwbModelInterpreter.importType(nwbFile, "testName", library, commonLibraryAccess);
 		Assert.assertNotNull(nwbType);
 		//test that everything that should be extracted is available through the type
+		System.out.println("Running");
 	}
 
 }
