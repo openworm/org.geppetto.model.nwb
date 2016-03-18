@@ -57,7 +57,14 @@ import org.geppetto.model.ModelFormat;
 import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.Type;
 import org.geppetto.model.types.TypesFactory;
+import org.geppetto.model.types.TypesPackage;
+import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.values.Pointer;
+import org.geppetto.model.values.TimeSeries;
+import org.geppetto.model.values.Unit;
+import org.geppetto.model.values.ValuesFactory;
+import org.geppetto.model.variables.Variable;
+import org.geppetto.model.variables.VariablesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -120,7 +127,7 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			H5File nwbFile = HDF5Reader.readHDF5File(new File(file_path).toURI().toURL(),-1l);
 			ReadNWBFile reader = new ReadNWBFile();
 			String path  = "/epochs/Sweep_0";	// path should point to data set in which you are interested.
-			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
+			//ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
 			NWBObject nwbObject = reader.readNWBFile(path, nwbFile);
 			double dt = nwbObject.sampling_rate;
 			double [] t = new double[nwbObject.response.length];
@@ -128,19 +135,21 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		    	t[i] = (i*dt);
 		      
 		
-			/*	Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
+			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
 			stimulus.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
 			stimulus.setId("stimulus");
 			stimulus.setName("stimulus");
 			
 			TimeSeries stimulusTimeSeries=ValuesFactory.eINSTANCE.createTimeSeries();
-			stimulusTimeSeries.getValue().addAll(Arrays.asList(nwbObj.stimulus));
-			
+			Unit unit = ValuesFactory.eINSTANCE.createUnit();
+			unit.setUnit("pA");
+			stimulusTimeSeries.setUnit(unit);
+			stimulusTimeSeries.getValue().addAll(Arrays.asList(nwbObject.stimulus));
 			stimulus.getInitialValues().put(
 					commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
 					stimulusTimeSeries);
 			
-			nwcModelType.getVariables().add(stimulus); */	
+			nwcModelType.getVariables().add(stimulus);
 			
 		}
 		catch (MalformedURLException e) {
@@ -153,6 +162,9 @@ public class NWBModelInterpreterService extends AModelInterpreter
 //			e.printStackTrace();
 		//}
 		catch (GeppettoExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (GeppettoVisitingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

@@ -1,8 +1,8 @@
 package org.geppetto.model.nwb;
 
 public class NWBObject {
-	public double[] stimulus;
-	public double [] response;
+	public Double[] stimulus;
+	public Double [] response;
 	public double sampling_rate;
 	public int swp_idx_start;
 	public int swp_idx_stop;

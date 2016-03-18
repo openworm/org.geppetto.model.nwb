@@ -150,7 +150,7 @@ public class ReadNWBFile
         
         return sweepNumbers;
 	}
-
+/*
 	public NWBObject readNWBFile(String path, H5File nwbFile) throws GeppettoExecutionException
 	{
 		NWBObject nwbObject;
@@ -171,15 +171,15 @@ public class ReadNWBFile
 		}
 		return nwbObject;
 		
-	}
-	public NWBObject readNWBFileHelper(String path, H5File nwbFile) throws GeppettoExecutionException
+	} */
+	public NWBObject readNWBFile(String path, H5File nwbFile) throws GeppettoExecutionException
 	{
 		NWBObject nwbObject = new NWBObject();
 		try
 		{
 			openNWBFile(nwbFile);
-			nwbObject.stimulus = readArray(path + "/stimulus/timeseries/data", nwbFile);
-			nwbObject.response = readArray(path + "/response/timeseries/data", nwbFile);
+			double stimulus[] = readArray(path + "/stimulus/timeseries/data", nwbFile);
+			double response[] = readArray(path + "/response/timeseries/data", nwbFile);
 		    Dataset dataset = (Dataset) FileFormat.findObject(nwbFile, path + "/stimulus/idx_start");
 			Object obj = dataset.read();
 			nwbObject.swp_idx_start = ((int[]) obj)[0];
@@ -196,6 +196,16 @@ public class ReadNWBFile
 					System.out.println("samplig rate : " + nwbObject.sampling_rate);
 				}			
 			}
+			nwbObject.stimulus = new Double[stimulus.length];
+			nwbObject.response = new Double[response.length];
+			for(int i=0; i<stimulus.length; i++)	//converting stimulus to pA, response -> current
+				nwbObject.stimulus[i] =  Double.valueOf(stimulus[i] * 1000000000000.0);
+			
+			for(int i=0; i<response.length; i++)	// converting to mV, response -> voltage 
+		    	   nwbObject.response[i] = Double.valueOf(response[i] * 1000.0); 
+			
+			nwbObject.sampling_rate = 1.0 / nwbObject.sampling_rate; //calculating sampling rate;
+		
 		}
 		catch(Exception e)
 		{
