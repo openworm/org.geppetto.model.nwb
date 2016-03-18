@@ -39,6 +39,7 @@ import ncsa.hdf.object.Attribute;
 import ncsa.hdf.object.Dataset;
 import ncsa.hdf.object.FileFormat;
 import ncsa.hdf.object.Group;
+import ncsa.hdf.object.HObject;
 import ncsa.hdf.object.h5.H5File;
 
 import org.geppetto.core.common.GeppettoExecutionException;
@@ -113,30 +114,63 @@ public class ReadNWBFile
 			
 		}
 	}
+	private static void printGroup(Group g, String indent) throws Exception
+	{
+        if (g == null) return;
+        java.util.List members = g.getMemberList();
+       // System.out.println("Number of members" + g.getNumberOfMembersInFile());
+        int n = members.size();
+        indent += "    ";
+        HObject obj = null;
+        for (int i = 0; i < n; i++) {
+            obj = (HObject) members.get(i);
+            System.out.println(indent + obj);
+            if (obj instanceof Group) {
+            	if (obj instanceof Group) {
+                    printGroup((Group) obj, indent);
+                }
+            
+            }
+        }
+    }
 	public ArrayList<Integer> getSweepNumbers(H5File nwbFile) throws GeppettoExecutionException
 	{
 		ArrayList<Integer> sweepNumbers = new ArrayList<Integer>();
 		try{
 			openNWBFile(nwbFile);
 			Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) nwbFile.getRootNode()).getUserObject();
-			Dataset dataset = (Dataset) root.getMemberList();
-			//nwbFile.get
-//			Dataset dataset = (Dataset) FileFormat.findObject(nwbFile, "/epochs");
-//			Object obj = dataset.read();
-//			
-//			for (int i = 0; i < mystring.size(); ++i)
-//			{
-//				if(mystring.get(i).startsWith("Sweep_"))
-//				{
-//					String [] num =  mystring.get(i).split("_");
-//            	
-//					if (num.length >1)
-//					{
-//						if (num[1] != "")
-//							sweep_numbers.add(Integer.parseInt(num[1]));
-//					}
-//				}	
-//			}
+			/* to ask - getMemberList() function at first level expects all to be Groups, if it finds a dataset file it 
+			 * terminates from that point without returning remaining groups below that data set file.
+			 * this happens at level 0 only, levels above this it returns all members*/
+	        // printGroup((Group)root.getMemberList().get(0), "");
+			if (root == null ) return null;
+			List members = root.getMemberList();
+			int n = members.size();
+			HObject obj = null;
+			for (int i = 0; i < n; i++)
+			{
+				obj = (HObject) members.get(i);
+	            if (obj instanceof Group && obj.toString().equals("epochs"))
+	            {
+	            	Group epochs = (Group) obj;
+	            	List allMembers = epochs.getMemberList();
+	    			int len = allMembers.size();
+	    			for (int j = 0; j < len; j++)
+	    			{
+	    				String s = allMembers.get(j).toString();
+	    				if(s.startsWith("Sweep_"))
+	    				{
+	    					String [] num =  s.split("_");
+	    					if (num.length >1)
+	    					{
+	    						if (num[1] != "")
+	    							sweepNumbers.add(Integer.parseInt(num[1]));
+	    					}
+	    				}
+	    			}
+	    			break;
+	            }
+			}
 		}
 		catch(Exception e)
 		{
@@ -193,7 +227,6 @@ public class ReadNWBFile
 				if(a.getName().equals("rate"))
 				{
 					nwbObject.sampling_rate = ((double[]) a.getValue())[0];
-					System.out.println("samplig rate : " + nwbObject.sampling_rate);
 				}			
 			}
 			nwbObject.stimulus = new Double[stimulus.length];

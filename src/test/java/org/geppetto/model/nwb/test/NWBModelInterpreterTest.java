@@ -102,7 +102,7 @@ public class NWBModelInterpreterTest
 		Type nwbType = nwbModelInterpreter.importType(nwbFile, "testName", library, commonLibraryAccess);
 		Assert.assertNotNull(nwbType);
 		//test that everything that should be extracted is available through the type
-		System.out.println("Running");
+		//System.out.println("Running");
 	}
 
 }

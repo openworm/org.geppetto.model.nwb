@@ -59,6 +59,7 @@ import org.geppetto.model.types.Type;
 import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.types.TypesPackage;
 import org.geppetto.model.util.GeppettoVisitingException;
+import org.geppetto.model.values.FunctionPlot;
 import org.geppetto.model.values.Pointer;
 import org.geppetto.model.values.TimeSeries;
 import org.geppetto.model.values.Unit;
@@ -126,15 +127,15 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			String file_path = "./src/main/resources/354190011.nwb";
 			H5File nwbFile = HDF5Reader.readHDF5File(new File(file_path).toURI().toURL(),-1l);
 			ReadNWBFile reader = new ReadNWBFile();
-			String path  = "/epochs/Sweep_0";	// path should point to data set in which you are interested.
-			//ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
+			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile); // returns list of sweep numbers
+			String path  = "/epochs/Sweep_" + sweepNumber.get(0);	// path should point to data set in which you are interested.
+			
 			NWBObject nwbObject = reader.readNWBFile(path, nwbFile);
 			double dt = nwbObject.sampling_rate;
-			double [] t = new double[nwbObject.response.length];
+			Double [] t = new Double[nwbObject.response.length];
 		    for(int i=0; i<nwbObject.response.length; i++) // generating time axis A.P.
-		    	t[i] = (i*dt);
-		      
-		
+		    	t[i] = Double.valueOf(i*dt);
+		    
 			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
 			stimulus.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
 			stimulus.setId("stimulus");
@@ -142,15 +143,27 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			
 			TimeSeries stimulusTimeSeries=ValuesFactory.eINSTANCE.createTimeSeries();
 			Unit unit = ValuesFactory.eINSTANCE.createUnit();
-			unit.setUnit("pA");
+			unit.setUnit("current pA");
 			stimulusTimeSeries.setUnit(unit);
 			stimulusTimeSeries.getValue().addAll(Arrays.asList(nwbObject.stimulus));
 			stimulus.getInitialValues().put(
 					commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
 					stimulusTimeSeries);
-			
 			nwcModelType.getVariables().add(stimulus);
 			
+			Variable time = VariablesFactory.eINSTANCE.createVariable();
+			time.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
+			time.setId("stimulus");
+			time.setName("stimulus");
+			
+			TimeSeries stimulusTimeSeriesTime = ValuesFactory.eINSTANCE.createTimeSeries();
+			unit.setUnit("time ms");
+			stimulusTimeSeriesTime.setUnit(unit);
+			stimulusTimeSeriesTime.getValue().addAll(Arrays.asList(t));
+			time.getInitialValues().put(
+					commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
+					stimulusTimeSeriesTime);
+			nwcModelType.getVariables().add(time);
 		}
 		catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
