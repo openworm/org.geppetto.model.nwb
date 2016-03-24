@@ -125,7 +125,7 @@ public class NWBModelInterpreterService extends AModelInterpreter
 				e.printStackTrace();
 			}
 			String file_path = "./src/main/resources/354190011.nwb";
-			H5File nwbFile = HDF5Reader.readHDF5File(new File(file_path).toURI().toURL(),-1l);
+			H5File nwbFile = HDF5Reader.readHDF5File(url,-1l);
 			ReadNWBFile reader = new ReadNWBFile();
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile); // returns list of sweep numbers
 			String path  = "/epochs/Sweep_" + sweepNumber.get(0);	// path should point to data set in which you are interested.
@@ -165,21 +165,18 @@ public class NWBModelInterpreterService extends AModelInterpreter
 					stimulusTimeSeriesTime);
 			nwcModelType.getVariables().add(time);
 		}
-		catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-//		catch (HDF5Exception e)
+		//		catch (HDF5Exception e)
 //		{
 //			System.out.println("Exception while reading HDF5 file");
 //			e.printStackTrace();
 		//}
 		catch (GeppettoExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
+			throw new ModelInterpreterException(e);
+			
 		} catch (GeppettoVisitingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
+			throw new ModelInterpreterException(e);
 		}
 		return nwcModelType;
 
