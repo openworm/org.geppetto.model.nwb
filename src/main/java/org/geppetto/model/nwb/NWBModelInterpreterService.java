@@ -105,7 +105,24 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		supportedOutputs.add(ServicesRegistry.getModelFormat("NWB"));
 		return supportedOutputs;
 	}
-
+	Variable createMyVariable(Double[] data, String id, String name, String unit, GeppettoModelAccess commonLibraryAccess) throws GeppettoVisitingException
+	{
+		Variable var = VariablesFactory.eINSTANCE.createVariable();
+		var.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
+		var.setId(id);
+		var.setName(name);
+		
+		TimeSeries myTimeSeries=ValuesFactory.eINSTANCE.createTimeSeries();
+		Unit myUnit = ValuesFactory.eINSTANCE.createUnit();
+		myUnit.setUnit(unit);
+		myTimeSeries.setUnit(myUnit);
+		myTimeSeries.getValue().addAll(Arrays.asList(data));
+		var.getInitialValues().put(
+				commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
+				myTimeSeries);
+		return var;
+		
+	}
 	@Override
 	public Type importType(URL url, String typeName, GeppettoLibrary library, GeppettoModelAccess commonLibraryAccess) throws ModelInterpreterException
 	{
@@ -113,12 +130,6 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		CompositeType nwcModelType = TypesFactory.eINSTANCE.createCompositeType();
 		try
 		{
-			// Nitesh: convert from NWB to Type
-			// 1 - Open the NWB file using the HDF5Reader
-			// 2 - Extract from the NWB the information as per Rick email
-			// a) create root CompositeType
-			// b) iterate the H5File and build the subtypes for the different nodes
-			// c) create TimeSeries variable/values for the Time series data, text/url/html variables for the rest
 			try {
 				SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
 			} catch (IOException e) {
@@ -136,40 +147,15 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		    for(int i=0; i<nwbObject.response.length; i++) // generating time axis A.P.
 		    	t[i] = Double.valueOf(i*dt);
 		    
-			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
-			stimulus.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
-			stimulus.setId("stimulus");
-			stimulus.setName("stimulus");
-			
-			TimeSeries stimulusTimeSeries=ValuesFactory.eINSTANCE.createTimeSeries();
-			Unit unit = ValuesFactory.eINSTANCE.createUnit();
-			unit.setUnit("current pA");
-			stimulusTimeSeries.setUnit(unit);
-			stimulusTimeSeries.getValue().addAll(Arrays.asList(nwbObject.stimulus));
-			stimulus.getInitialValues().put(
-					commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
-					stimulusTimeSeries);
+			Variable stimulus = createMyVariable(nwbObject.stimulus, "stimulus", "stimulus", "current pA", commonLibraryAccess);
 			nwcModelType.getVariables().add(stimulus);
 			
-			Variable time = VariablesFactory.eINSTANCE.createVariable();
-			time.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
-			time.setId("stimulus");
-			time.setName("stimulus");
+			Variable response = createMyVariable(nwbObject.response, "response", "response", "volt mV", commonLibraryAccess);
+			nwcModelType.getVariables().add(response);
 			
-			TimeSeries stimulusTimeSeriesTime = ValuesFactory.eINSTANCE.createTimeSeries();
-			unit.setUnit("time ms");
-			stimulusTimeSeriesTime.setUnit(unit);
-			stimulusTimeSeriesTime.getValue().addAll(Arrays.asList(t));
-			time.getInitialValues().put(
-					commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
-					stimulusTimeSeriesTime);
+			Variable time = createMyVariable(t, "time", "time", "time mS", commonLibraryAccess);
 			nwcModelType.getVariables().add(time);
 		}
-		//		catch (HDF5Exception e)
-//		{
-//			System.out.println("Exception while reading HDF5 file");
-//			e.printStackTrace();
-		//}
 		catch (GeppettoExecutionException e) {
 			
 			throw new ModelInterpreterException(e);

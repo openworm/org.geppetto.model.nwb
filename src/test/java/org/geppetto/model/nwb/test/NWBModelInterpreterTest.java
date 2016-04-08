@@ -90,7 +90,7 @@ public class NWBModelInterpreterTest
 	public void testReadNWB() throws ModelInterpreterException, GeppettoInitializationException, GeppettoVisitingException
 	{
 		NWBModelInterpreterService nwbModelInterpreter = new NWBModelInterpreterService();
-		URL nwbFile = this.getClass().getResource("/nwbSample.nwb");
+		URL nwbFile = this.getClass().getResource("/354190011.nwb");
 		GeppettoLibrary library = GeppettoFactory.eINSTANCE.createGeppettoLibrary();
 		library.setId("NWB");
 		GeppettoLibrary commonLibrary = SharedLibraryManager.getSharedCommonLibrary();

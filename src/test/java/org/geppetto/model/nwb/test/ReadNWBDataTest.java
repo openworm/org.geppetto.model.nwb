@@ -30,8 +30,8 @@ public class ReadNWBDataTest {
 		Assert.assertNotNull(nwb);
 		Assert.assertNotNull(sweepNumber);
 	
-		for (int i=0; i< sweepNumber.size(); i++)
-			System.out.println("Sweep_" + sweepNumber.get(i));
+//		for (int i=0; i< sweepNumber.size(); i++)
+//			System.out.println("Sweep_" + sweepNumber.get(i));
 //		for(int i=0; i<3000; i++)
 //			System.out.println("stimulus " + nwb.stimulus[i]);
 //		for(int i=0; i<3000; i++)

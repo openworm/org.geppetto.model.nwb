@@ -114,7 +114,7 @@ public class ReadNWBFile
 			
 		}
 	}
-	private static void printGroup(Group g, String indent) throws Exception
+/*	private static void printGroup(Group g, String indent) throws Exception
 	{
         if (g == null) return;
         java.util.List members = g.getMemberList();
@@ -132,7 +132,7 @@ public class ReadNWBFile
             
             }
         }
-    }
+    }*/
 	public ArrayList<Integer> getSweepNumbers(H5File nwbFile) throws GeppettoExecutionException
 	{
 		ArrayList<Integer> sweepNumbers = new ArrayList<Integer>();
@@ -235,7 +235,7 @@ public class ReadNWBFile
 				nwbObject.stimulus[i] =  Double.valueOf(stimulus[i] * 1000000000000.0);
 			
 			for(int i=0; i<response.length; i++)	// converting to mV, response -> voltage 
-		    	   nwbObject.response[i] = Double.valueOf(response[i] * 1000.0); 
+		    	   nwbObject.response[i] = Double.valueOf(response[i] * 1000.0);
 			
 			nwbObject.sampling_rate = 1.0 / nwbObject.sampling_rate; //calculating sampling rate;
 		
