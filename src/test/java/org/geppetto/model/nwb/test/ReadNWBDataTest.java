@@ -34,8 +34,10 @@ public class ReadNWBDataTest {
 //			System.out.println("Sweep_" + sweepNumber.get(i));
 //		for(int i=0; i<3000; i++)
 //			System.out.println("stimulus " + nwb.stimulus[i]);
-//		for(int i=0; i<3000; i++)
-//			System.out.println("response " + nwb.response[i]);
+		for(int i=0; i<nwb.response.length; i++){
+			if (nwb.response[i] > 2000.0)
+				System.out.println("response "+ i + " " + nwb.response[i]);
+		}
 		System.out.println("sampling_rate " + nwb.sampling_rate);
 		System.out.println("start_index " + nwb.swp_idx_start);
 		System.out.println("stop_index " + nwb.swp_idx_stop);

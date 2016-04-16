@@ -232,10 +232,10 @@ public class ReadNWBFile
 			nwbObject.stimulus = new Double[stimulus.length];
 			nwbObject.response = new Double[response.length];
 			for(int i=0; i<stimulus.length; i++)	//converting stimulus to pA, response -> current
-				nwbObject.stimulus[i] =  Double.valueOf(stimulus[i] * 1000000000000.0);
+				nwbObject.stimulus[i] =  Double.valueOf(stimulus[i] * 1000.0);
 			
 			for(int i=0; i<response.length; i++)	// converting to mV, response -> voltage 
-		    	   nwbObject.response[i] = Double.valueOf(response[i] * 1000.0);
+		    	   nwbObject.response[i] = Double.valueOf(response[i] * 1000000000000.0);
 			
 			nwbObject.sampling_rate = 1.0 / nwbObject.sampling_rate; //calculating sampling rate;
 		

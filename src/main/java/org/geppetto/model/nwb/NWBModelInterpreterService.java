@@ -105,7 +105,7 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		supportedOutputs.add(ServicesRegistry.getModelFormat("NWB"));
 		return supportedOutputs;
 	}
-	Variable createMyVariable(Double[] data, String id, String name, String unit, GeppettoModelAccess commonLibraryAccess) throws GeppettoVisitingException
+	private Variable createMyVariable(Double[] data, String id, String name, String unit, GeppettoModelAccess commonLibraryAccess) throws GeppettoVisitingException
 	{
 		Variable var = VariablesFactory.eINSTANCE.createVariable();
 		var.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
