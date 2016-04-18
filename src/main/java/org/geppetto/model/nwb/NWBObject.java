@@ -3,10 +3,11 @@ package org.geppetto.model.nwb;
 public class NWBObject {
 	public Double[] stimulus;
 	public Double [] response;
-	public double sampling_rate;
-	public int swp_idx_start;
-	public int swp_idx_stop;
-	
+	public double samplingRate;
+	public int swpIdxStart;
+	public int swpIdxStop;
+	public String stimulusUnit;
+	public String responseUnit;
 //	public NWBObject(Double [] stimulus, double [] response, int swp_idx_start,int swp_idx_stop, double sampling_rate) {
 //		this.stimulus = stimulus;
 //		this.response = response;

@@ -139,18 +139,18 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			H5File nwbFile = HDF5Reader.readHDF5File(url,-1l);
 			ReadNWBFile reader = new ReadNWBFile();
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile); // returns list of sweep numbers
-			String path  = "/epochs/Sweep_" + sweepNumber.get(0);	// path should point to data set in which you are interested.
+			String path  = "/epochs/Sweep_" + sweepNumber.get(4);	// path should point to data set in which you are interested.
 			
 			NWBObject nwbObject = reader.readNWBFile(path, nwbFile);
-			double dt = nwbObject.sampling_rate;
+			double dt = nwbObject.samplingRate;
 			Double [] t = new Double[nwbObject.response.length];
 		    for(int i=0; i<nwbObject.response.length; i++) // generating time axis A.P.
 		    	t[i] = Double.valueOf(i*dt);
 		    
-			Variable stimulus = createMyVariable(nwbObject.stimulus, "stimulus", "stimulus", "current pA", commonLibraryAccess);
+			Variable stimulus = createMyVariable(nwbObject.stimulus, "stimulus", "stimulus", nwbObject.stimulusUnit, commonLibraryAccess);
 			nwcModelType.getVariables().add(stimulus);
 			
-			Variable response = createMyVariable(nwbObject.response, "response", "response", "volt mV", commonLibraryAccess);
+			Variable response = createMyVariable(nwbObject.response, "response", "response", nwbObject.responseUnit, commonLibraryAccess);
 			nwcModelType.getVariables().add(response);
 			
 			Variable time = createMyVariable(t, "time", "time", "time mS", commonLibraryAccess);

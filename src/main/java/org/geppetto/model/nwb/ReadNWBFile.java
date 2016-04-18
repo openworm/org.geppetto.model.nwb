@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ncsa.hdf.object.Attribute;
+import ncsa.hdf.object.DataFormat;
 import ncsa.hdf.object.Dataset;
 import ncsa.hdf.object.FileFormat;
 import ncsa.hdf.object.Group;
@@ -133,6 +134,29 @@ public class ReadNWBFile
             }
         }
     }*/
+	private static String getAttribute(H5File nwbFile, String path, String attributeName ) throws GeppettoExecutionException
+	{
+		try{
+			DataFormat dataset = (Dataset) FileFormat.findObject(nwbFile, path);
+			List<Attribute> attributes = dataset.getMetadata();
+			for(Attribute a : attributes)
+			{
+				if(a.getName().equals(attributeName))
+				{
+					Object obj = a.getValue();
+					if (obj instanceof double[]){
+						Double d =  ((double[]) obj)[0];
+						return d.toString();
+					}	
+					else if (obj instanceof String[])
+						return ((String []) obj)[0];
+				}			
+			}
+		}catch(Exception e){
+			throw new GeppettoExecutionException("Error reading a variable from the recording", e);
+		}
+		return "";
+	}
 	public ArrayList<Integer> getSweepNumbers(H5File nwbFile) throws GeppettoExecutionException
 	{
 		ArrayList<Integer> sweepNumbers = new ArrayList<Integer>();
@@ -216,28 +240,40 @@ public class ReadNWBFile
 			double response[] = readArray(path + "/response/timeseries/data", nwbFile);
 		    Dataset dataset = (Dataset) FileFormat.findObject(nwbFile, path + "/stimulus/idx_start");
 			Object obj = dataset.read();
-			nwbObject.swp_idx_start = ((int[]) obj)[0];
+			nwbObject.swpIdxStart = ((int[]) obj)[0];
 			dataset = (Dataset) FileFormat.findObject(nwbFile, path + "/stimulus/count");
 			int len  = ((int[]) dataset.read())[0];
-			nwbObject.swp_idx_stop = nwbObject.swp_idx_start + len - 1;
-			dataset = (Dataset) FileFormat.findObject(nwbFile, path + "/stimulus/timeseries/starting_time");
-			List<Attribute> attributes = dataset.getMetadata();
-			for(Attribute a : attributes)
-			{
-				if(a.getName().equals("rate"))
-				{
-					nwbObject.sampling_rate = ((double[]) a.getValue())[0];
-				}			
-			}
+			nwbObject.swpIdxStop = nwbObject.swpIdxStart + len - 1;
+			
+			String stimulusUnit = getAttribute(nwbFile, path + "/stimulus/timeseries/data", "units");
+			//String responseUnit = getAttribute(nwbFile, path + "/response/timeseries/data", "units");
+			String samplingRate = getAttribute(nwbFile, path + "/response/timeseries/starting_time", "rate");
+			
+			nwbObject.samplingRate = Double.parseDouble(samplingRate);
 			nwbObject.stimulus = new Double[stimulus.length];
 			nwbObject.response = new Double[response.length];
-			for(int i=0; i<stimulus.length; i++)	//converting stimulus to pA, response -> current
-				nwbObject.stimulus[i] =  Double.valueOf(stimulus[i] * 1000.0);
 			
-			for(int i=0; i<response.length; i++)	// converting to mV, response -> voltage 
-		    	   nwbObject.response[i] = Double.valueOf(response[i] * 1000000000000.0);
+			Double stimulusConversion, responseConversion;
+			if (stimulusUnit.equals("Amps")){
+				stimulusConversion = 1000000000000.0;
+				responseConversion = 1000.0;
+				nwbObject.stimulusUnit = "Stimulus (pA)";
+				nwbObject.responseUnit = "Response (mV)";
+			}
+			else{
+				stimulusConversion = 1000.0;
+				responseConversion = 1000000000000.0;
+				nwbObject.stimulusUnit = "Stimulus (mV)";
+				nwbObject.responseUnit = "Response (pA)";
+			}
+				
+			for(int i=0; i<stimulus.length; i++)
+				nwbObject.stimulus[i] =  Double.valueOf(stimulus[i] * stimulusConversion);
 			
-			nwbObject.sampling_rate = 1.0 / nwbObject.sampling_rate; //calculating sampling rate;
+			for(int i=0; i<response.length; i++)
+		    	   nwbObject.response[i] = Double.valueOf(response[i] * responseConversion);
+			
+			nwbObject.samplingRate = 1.0 / nwbObject.samplingRate;
 		
 		}
 		catch(Exception e)

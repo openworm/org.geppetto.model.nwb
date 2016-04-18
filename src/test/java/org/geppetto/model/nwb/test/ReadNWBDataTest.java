@@ -21,7 +21,7 @@ public class ReadNWBDataTest {
 	{
 		//this.setup();
 		H5File file=HDF5Reader.readHDF5File(new File("./src/main/resources/354190011.nwb").toURI().toURL(),-1l);
-		String path = "/epochs/Sweep_0";
+		String path = "/epochs/Sweep_100";
 		ReadNWBFile rd = new ReadNWBFile();
 		ArrayList<Integer> sweepNumber = rd.getSweepNumbers(file);
 		NWBObject nwb  = rd.readNWBFile(path, file);
@@ -30,17 +30,19 @@ public class ReadNWBDataTest {
 		Assert.assertNotNull(nwb);
 		Assert.assertNotNull(sweepNumber);
 	
-//		for (int i=0; i< sweepNumber.size(); i++)
-//			System.out.println("Sweep_" + sweepNumber.get(i));
+		for (int i=0; i< sweepNumber.size(); i++)
+			System.out.println("Sweep_" + sweepNumber.get(i));
 //		for(int i=0; i<3000; i++)
 //			System.out.println("stimulus " + nwb.stimulus[i]);
-		for(int i=0; i<nwb.response.length; i++){
-			if (nwb.response[i] > 2000.0)
-				System.out.println("response "+ i + " " + nwb.response[i]);
-		}
-		System.out.println("sampling_rate " + nwb.sampling_rate);
-		System.out.println("start_index " + nwb.swp_idx_start);
-		System.out.println("stop_index " + nwb.swp_idx_stop);
+//		for(int i=0; i<nwb.response.length; i++){
+//			if (nwb.response[i] > 2000.0)
+//				System.out.println("response "+ i + " " + nwb.response[i]);
+//		}
+		System.out.println("sampling_rate " + nwb.samplingRate);
+		System.out.println("Stimulus Unit " + nwb.stimulusUnit);
+		System.out.println("Response Unit " + nwb.responseUnit);
+		System.out.println("start_index " + nwb.swpIdxStart);
+		System.out.println("stop_index " + nwb.swpIdxStop);
 		
 	}
 }
