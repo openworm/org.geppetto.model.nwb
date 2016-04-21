@@ -35,7 +35,6 @@ package org.geppetto.model.nwb;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,7 +58,6 @@ import org.geppetto.model.types.Type;
 import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.types.TypesPackage;
 import org.geppetto.model.util.GeppettoVisitingException;
-import org.geppetto.model.values.FunctionPlot;
 import org.geppetto.model.values.Pointer;
 import org.geppetto.model.values.TimeSeries;
 import org.geppetto.model.values.Unit;
@@ -105,63 +103,72 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		supportedOutputs.add(ServicesRegistry.getModelFormat("NWB"));
 		return supportedOutputs;
 	}
-	private Variable createMyVariable(Double[] data, String id, String name, String unit, GeppettoModelAccess commonLibraryAccess) throws GeppettoVisitingException
+
+	private Variable createStateVariable(Double[] data, String id, String name, String unit, GeppettoModelAccess commonLibraryAccess) throws GeppettoVisitingException
 	{
 		Variable var = VariablesFactory.eINSTANCE.createVariable();
 		var.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
 		var.setId(id);
 		var.setName(name);
-		
-		TimeSeries myTimeSeries=ValuesFactory.eINSTANCE.createTimeSeries();
+
+		TimeSeries myTimeSeries = ValuesFactory.eINSTANCE.createTimeSeries();
 		Unit myUnit = ValuesFactory.eINSTANCE.createUnit();
 		myUnit.setUnit(unit);
 		myTimeSeries.setUnit(myUnit);
 		myTimeSeries.getValue().addAll(Arrays.asList(data));
-		var.getInitialValues().put(
-				commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), 
-				myTimeSeries);
+		var.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), myTimeSeries);
 		return var;
-		
+
 	}
+
 	@Override
 	public Type importType(URL url, String typeName, GeppettoLibrary library, GeppettoModelAccess commonLibraryAccess) throws ModelInterpreterException
 	{
 		dependentModels.clear();
 		CompositeType nwcModelType = TypesFactory.eINSTANCE.createCompositeType();
+		nwcModelType.setId(url.getFile());
+		nwcModelType.setName(url.getFile());
 		try
 		{
-			try {
+			try
+			{
 				SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
-			String file_path = "./src/main/resources/354190011.nwb";
-			H5File nwbFile = HDF5Reader.readHDF5File(url,-1l);
+			catch(IOException e)
+			{
+				throw new ModelInterpreterException(e);
+			}
+
+			H5File nwbFile = HDF5Reader.readHDF5File(url, -1l);
 			ReadNWBFile reader = new ReadNWBFile();
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile); // returns list of sweep numbers
-			String path  = "/epochs/Sweep_" + sweepNumber.get(4);	// path should point to data set in which you are interested.
-			
+			String path = "/epochs/Sweep_" + sweepNumber.get(4); // path should point to data set in which you are interested.
+
 			NWBObject nwbObject = reader.readNWBFile(path, nwbFile);
 			double dt = nwbObject.samplingRate;
-			Double [] t = new Double[nwbObject.response.length];
-		    for(int i=0; i<nwbObject.response.length; i++) // generating time axis A.P.
-		    	t[i] = Double.valueOf(i*dt);
-		    
-			Variable stimulus = createMyVariable(nwbObject.stimulus, "stimulus", "stimulus", nwbObject.stimulusUnit, commonLibraryAccess);
+			Double[] t = new Double[nwbObject.response.length];
+			for(int i = 0; i < nwbObject.response.length; i++)
+				// generating time axis A.P.
+				t[i] = Double.valueOf(i * dt);
+
+			Variable stimulus = createStateVariable(nwbObject.stimulus, "stimulus", "stimulus", nwbObject.stimulusUnit, commonLibraryAccess);
 			nwcModelType.getVariables().add(stimulus);
-			
-			Variable response = createMyVariable(nwbObject.response, "response", "response", nwbObject.responseUnit, commonLibraryAccess);
+
+			Variable response = createStateVariable(nwbObject.response, "response", "response", nwbObject.responseUnit, commonLibraryAccess);
 			nwcModelType.getVariables().add(response);
-			
-			Variable time = createMyVariable(t, "time", "time", "time mS", commonLibraryAccess);
+
+			Variable time = createStateVariable(t, "time", "time", "ms", commonLibraryAccess);
 			nwcModelType.getVariables().add(time);
 		}
-		catch (GeppettoExecutionException e) {
-			
+		catch(GeppettoExecutionException e)
+		{
+
 			throw new ModelInterpreterException(e);
-			
-		} catch (GeppettoVisitingException e) {
-			
+
+		}
+		catch(GeppettoVisitingException e)
+		{
+
 			throw new ModelInterpreterException(e);
 		}
 		return nwcModelType;
