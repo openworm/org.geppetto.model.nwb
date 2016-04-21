@@ -251,7 +251,7 @@ public class ReadNWBFile
 			{
 				stimulusConversion = 1000.0;
 				responseConversion = 1000000000000.0;
-				nwbObject.stimulusUnit = "mV)";
+				nwbObject.stimulusUnit = "mV";
 				nwbObject.responseUnit = "pA";
 			}
 
