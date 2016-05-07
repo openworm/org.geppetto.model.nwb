@@ -35,6 +35,7 @@ package org.geppetto.model.nwb;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -104,76 +105,33 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		return supportedOutputs;
 	}
 
-	private Variable createStateVariable(Double[] data, String id, String name, String unit, GeppettoModelAccess commonLibraryAccess) throws GeppettoVisitingException
-	{
-		Variable var = VariablesFactory.eINSTANCE.createVariable();
-		var.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
-		var.setId(id);
-		var.setName(name);
-
-		TimeSeries myTimeSeries = ValuesFactory.eINSTANCE.createTimeSeries();
-		Unit myUnit = ValuesFactory.eINSTANCE.createUnit();
-		myUnit.setUnit(unit);
-		myTimeSeries.setUnit(myUnit);
-		myTimeSeries.getValue().addAll(Arrays.asList(data));
-		var.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), myTimeSeries);
-		return var;
-
-	}
-
 	@Override
 	public Type importType(URL url, String typeName, GeppettoLibrary library, GeppettoModelAccess commonLibraryAccess) throws ModelInterpreterException
 	{
 		dependentModels.clear();
-		CompositeType nwcModelType = TypesFactory.eINSTANCE.createCompositeType();
-		nwcModelType.setId(url.getFile());
-		nwcModelType.setName(url.getFile());
-		try
-		{
-			try
-			{
+		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
+		nwbModelType.setId(url.getFile());
+		nwbModelType.setName(url.getFile());
+		try{
+			try{
 				SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
 			}
-			catch(IOException e)
-			{
+			catch(IOException e){
 				throw new ModelInterpreterException(e);
 			}
-
+			
 			H5File nwbFile = HDF5Reader.readHDF5File(url, -1l);
 			ReadNWBFile reader = new ReadNWBFile();
-			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile); // returns list of sweep numbers
-			String path = "/epochs/Sweep_" + sweepNumber.get(4); // path should point to data set in which you are interested.
-
-			NWBObject nwbObject = reader.readNWBFile(path, nwbFile);
-			double dt = nwbObject.samplingRate;
-			Double[] t = new Double[nwbObject.response.length];
-			for(int i = 0; i < nwbObject.response.length; i++)
-				// generating time axis A.P.
-				t[i] = Double.valueOf(i * dt);
-
-			Variable stimulus = createStateVariable(nwbObject.stimulus, "stimulus", "stimulus", nwbObject.stimulusUnit, commonLibraryAccess);
-			nwcModelType.getVariables().add(stimulus);
-
-			Variable response = createStateVariable(nwbObject.response, "response", "response", nwbObject.responseUnit, commonLibraryAccess);
-			nwcModelType.getVariables().add(response);
-
-			Variable time = createStateVariable(t, "time", "time", "ms", commonLibraryAccess);
-			nwcModelType.getVariables().add(time);
+			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
+			String path = "/epochs/Sweep_" + sweepNumber.get(4);
+			reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
+			reader.getNWBMetadata(nwbFile, "/general", nwbModelType, commonLibraryAccess);	
 		}
-		catch(GeppettoExecutionException e)
-		{
-
+		catch(GeppettoExecutionException e){
 			throw new ModelInterpreterException(e);
-
+			} 
+		return nwbModelType;
 		}
-		catch(GeppettoVisitingException e)
-		{
-
-			throw new ModelInterpreterException(e);
-		}
-		return nwcModelType;
-
-	}
 
 	@Override
 	public File downloadModel(Pointer pointer, ModelFormat format, IAspectConfiguration aspectConfiguration) throws ModelInterpreterException
