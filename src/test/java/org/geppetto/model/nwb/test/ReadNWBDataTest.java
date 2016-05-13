@@ -2,6 +2,7 @@ package org.geppetto.model.nwb.test;
 
 import java.io.File;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 
 import ncsa.hdf.object.h5.H5File;
@@ -12,6 +13,7 @@ import org.geppetto.core.model.GeppettoModelAccess;
 import org.geppetto.model.nwb.NWBObject;
 import org.geppetto.model.nwb.ReadNWBFile;
 import org.geppetto.model.types.CompositeType;
+import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.util.GeppettoVisitingException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,18 +24,20 @@ public class ReadNWBDataTest {
 	public void nwbDataExtractionTest() throws MalformedURLException, GeppettoExecutionException, GeppettoVisitingException
 	{
 		//this.setup();
-		H5File file=HDF5Reader.readHDF5File(new File("./src/main/resources/313862020.nwb").toURI().toURL(),-1l);
+		URL url  = new File("./src/main/resources/313862020.nwb").toURI().toURL();
+		H5File file=HDF5Reader.readHDF5File(url,-1l);
 		String path = "/epochs/Sweep_12";
 		ReadNWBFile rd = new ReadNWBFile();
 		ArrayList<Integer> sweepNumber = rd.getSweepNumbers(file);
 		GeppettoModelAccess commonLibrayAccess = null;
-		CompositeType nwbModelType = null;
+		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
+		nwbModelType.setId(url.getFile());
+		nwbModelType.setName(url.getFile());
 		rd.readNWBFile(file, path, nwbModelType, commonLibrayAccess);
-		CompositeType nwbModelType2 = null;
-		rd.getNWBMetadata(file, "/general", nwbModelType2, commonLibrayAccess);
+		
+		rd.getNWBMetadata(file, "/general", nwbModelType, commonLibrayAccess);
 		Assert.assertNotNull(file);
 		Assert.assertNotNull(nwbModelType);
-		Assert.assertNotNull(nwbModelType2);
 		Assert.assertNotNull(sweepNumber);
 	
 		for (int i=0; i< sweepNumber.size(); i++)

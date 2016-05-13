@@ -143,7 +143,7 @@ public class ReadNWBFile
 		return var;
 		
 	}
-	public void getNWBMetadataHelper(H5File nwbFile, String path, CompositeType nwbModelType, GeppettoModelAccess commonLibrayAccess) throws OutOfMemoryError, Exception
+	public void getNWBMetadataHelper(H5File nwbFile, String path, CompositeType nwbModelMetadataType, GeppettoModelAccess commonLibrayAccess) throws OutOfMemoryError, Exception
 	{
 		/*CompositeType nwbMetadata = TypesFactory.eINSTANCE.createCompositeType();
 		nwbMetadata.setName("nwb_metadata");
@@ -159,7 +159,7 @@ public class ReadNWBFile
 					String newPath = path + "/" + obj.toString();
 					System.out.println(newPath);
 					//Group epochs = (Group) obj;
-					getNWBMetadataHelper(nwbFile, newPath, nwbModelType, commonLibrayAccess);
+					getNWBMetadataHelper(nwbFile, newPath, nwbModelMetadataType, commonLibrayAccess);
 				}else{
 					String name = obj.toString();
 					String id = name + "_id";
@@ -169,16 +169,16 @@ public class ReadNWBFile
 					}
 					String value = ((String[]) data.read())[0];
  					Variable var = createTextVariable(name, value, id, commonLibrayAccess);
-					nwbModelType.getVariables().add(var);
+ 					nwbModelMetadataType.getVariables().add(var);
 					System.out.println(obj.toString());
 				}
 			}	
 		}
-	public void getNWBMetadata (H5File nwbFile, String path, CompositeType nwbModelType, GeppettoModelAccess commonLibrayAccess) throws GeppettoExecutionException
+	public void getNWBMetadata (H5File nwbFile, String path, CompositeType nwbModelMetadataType, GeppettoModelAccess commonLibrayAccess) throws GeppettoExecutionException
 	{
 		try{
 			openNWBFile(nwbFile);
-			getNWBMetadataHelper(nwbFile, path, nwbModelType, commonLibrayAccess);
+			getNWBMetadataHelper(nwbFile, path, nwbModelMetadataType, commonLibrayAccess);
 			
 		} catch(Exception e){
 			throw new GeppettoExecutionException("Error while reading metadata from NWB file", e);

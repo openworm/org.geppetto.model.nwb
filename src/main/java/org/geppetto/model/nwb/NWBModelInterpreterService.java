@@ -60,6 +60,7 @@ import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.types.TypesPackage;
 import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.values.Pointer;
+import org.geppetto.model.values.Text;
 import org.geppetto.model.values.TimeSeries;
 import org.geppetto.model.values.Unit;
 import org.geppetto.model.values.ValuesFactory;
@@ -112,6 +113,10 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
 		nwbModelType.setId(url.getFile());
 		nwbModelType.setName(url.getFile());
+		CompositeType nwbModelMetadataType = TypesFactory.eINSTANCE.createCompositeType();
+		nwbModelMetadataType.setId("nwbMetadata");
+		nwbModelMetadataType.setName("nwbMetadata");
+		library.getTypes().add(nwbModelMetadataType);
 		try{
 			try{
 				SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
@@ -125,7 +130,15 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
 			String path = "/epochs/Sweep_" + sweepNumber.get(4);
 			reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
-			reader.getNWBMetadata(nwbFile, "/general", nwbModelType, commonLibraryAccess);	
+			
+			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType, commonLibraryAccess);	
+			Variable var = VariablesFactory.eINSTANCE.createVariable();
+			//Type textType = commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
+			
+			var.getTypes().add(nwbModelMetadataType);
+			var.setId("metadata");
+			var.setName("metadata");
+			nwbModelType.getVariables().add(var);
 		}
 		catch(GeppettoExecutionException e){
 			throw new ModelInterpreterException(e);
