@@ -35,7 +35,6 @@ package org.geppetto.model.nwb;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,13 +56,7 @@ import org.geppetto.model.ModelFormat;
 import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.Type;
 import org.geppetto.model.types.TypesFactory;
-import org.geppetto.model.types.TypesPackage;
-import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.values.Pointer;
-import org.geppetto.model.values.Text;
-import org.geppetto.model.values.TimeSeries;
-import org.geppetto.model.values.Unit;
-import org.geppetto.model.values.ValuesFactory;
 import org.geppetto.model.variables.Variable;
 import org.geppetto.model.variables.VariablesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,34 +110,38 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		nwbModelMetadataType.setId("nwbMetadata");
 		nwbModelMetadataType.setName("nwbMetadata");
 		library.getTypes().add(nwbModelMetadataType);
-		try{
-			try{
+		try
+		{
+			try
+			{
 				SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
 			}
-			catch(IOException e){
+			catch(IOException e)
+			{
 				throw new ModelInterpreterException(e);
 			}
-			
+
 			H5File nwbFile = HDF5Reader.readHDF5File(url, -1l);
 			ReadNWBFile reader = new ReadNWBFile();
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
 			String path = "/epochs/Sweep_" + sweepNumber.get(4);
 			reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
-			
-			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType, commonLibraryAccess);	
+
+			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType, commonLibraryAccess);
 			Variable var = VariablesFactory.eINSTANCE.createVariable();
-			//Type textType = commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
-			
+			// Type textType = commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
+
 			var.getTypes().add(nwbModelMetadataType);
 			var.setId("metadata");
 			var.setName("metadata");
 			nwbModelType.getVariables().add(var);
 		}
-		catch(GeppettoExecutionException e){
+		catch(GeppettoExecutionException e)
+		{
 			throw new ModelInterpreterException(e);
-			} 
-		return nwbModelType;
 		}
+		return nwbModelType;
+	}
 
 	@Override
 	public File downloadModel(Pointer pointer, ModelFormat format, IAspectConfiguration aspectConfiguration) throws ModelInterpreterException
