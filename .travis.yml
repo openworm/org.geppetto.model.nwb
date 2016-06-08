@@ -15,11 +15,6 @@ before_install:
     - #!/bin/bash
     - echo "cloning"
     - git clone https://github.com/github/git-lfs.git
-    - cd git-lfs
-    - echo "checkout commit master"
-    - git checkout master
-    - echo "pull"
-    - git-lfs pull
  
  
 
