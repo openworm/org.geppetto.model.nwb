@@ -12,8 +12,8 @@ install:
 
 
 before_script:
-    - git-lfs init
-    - git-lfs fetch
+    - git lfs init
+    - git lfs fetch
     
     
     
