@@ -34,12 +34,18 @@
 package org.geppetto.model.nwb;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import ncsa.hdf.object.h5.H5File;
+import ncsa.hdf.utils.SetNatives;
+
 import org.geppetto.core.beans.ModelInterpreterConfig;
+import org.geppetto.core.common.GeppettoExecutionException;
+import org.geppetto.core.common.HDF5Reader;
 import org.geppetto.core.data.model.IAspectConfiguration;
 import org.geppetto.core.model.AModelInterpreter;
 import org.geppetto.core.model.GeppettoModelAccess;
@@ -47,8 +53,12 @@ import org.geppetto.core.model.ModelInterpreterException;
 import org.geppetto.core.services.registry.ServicesRegistry;
 import org.geppetto.model.GeppettoLibrary;
 import org.geppetto.model.ModelFormat;
+import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.Type;
+import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.values.Pointer;
+import org.geppetto.model.variables.Variable;
+import org.geppetto.model.variables.VariablesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -92,15 +102,45 @@ public class NWBModelInterpreterService extends AModelInterpreter
 	@Override
 	public Type importType(URL url, String typeName, GeppettoLibrary library, GeppettoModelAccess commonLibraryAccess) throws ModelInterpreterException
 	{
-
 		dependentModels.clear();
+		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
+		nwbModelType.setId(url.getFile());
+		nwbModelType.setName(url.getFile());
+		CompositeType nwbModelMetadataType = TypesFactory.eINSTANCE.createCompositeType();
+		nwbModelMetadataType.setId("nwbMetadata");
+		nwbModelMetadataType.setName("nwbMetadata");
+		library.getTypes().add(nwbModelMetadataType);
+		try
+		{
+			try
+			{
+				SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
+			}
+			catch(IOException e)
+			{
+				throw new ModelInterpreterException(e);
+			}
 
-		Type nwcModeType = null;
+			H5File nwbFile = HDF5Reader.readHDF5File(url, -1l);
+			ReadNWBFile reader = new ReadNWBFile();
+			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
+			String path = "/epochs/Sweep_" + sweepNumber.get(4);
+			reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
 
-		// Nitesh: convert from NWB to Type
+			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType, commonLibraryAccess);
+			Variable var = VariablesFactory.eINSTANCE.createVariable();
+			// Type textType = commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
 
-		return nwcModeType;
-
+			var.getTypes().add(nwbModelMetadataType);
+			var.setId("metadata");
+			var.setName("metadata");
+			nwbModelType.getVariables().add(var);
+		}
+		catch(GeppettoExecutionException e)
+		{
+			throw new ModelInterpreterException(e);
+		}
+		return nwbModelType;
 	}
 
 	@Override
