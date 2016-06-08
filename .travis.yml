@@ -18,11 +18,10 @@ before_install:
     - cd git-lfs
     - echo "checkout commit master"
     - git checkout master
-    - cd ..
     - echo "init"
-    - git-lfs/git-lfs install
+    - git-lfs install
     - echo "pull"
-    - git-lfs/git-lfs pull
+    - git-lfs pull
  
  
 
