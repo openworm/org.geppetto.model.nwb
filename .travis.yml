@@ -14,18 +14,16 @@ install:
 before_install:
     - #!/bin/bash
     - echo "cloning"
-    - git clone git@github.com:github/git-lfs.git
+    - git clone https://github.com/github/git-lfs.git
     - cd git-lfs
-    - echo "checkout commit 4457d7c7c5906025f753579f67f975792235b717"
-    - git checkout 4457d7c7c5906025f753579f67f975792235b717
+    - echo "checkout commit master"
+    - git checkout master
     - echo "scripts/bootstrap"
     - script/bootstrap
-    - ls bin
-    - cd ..
     - echo "init"
-    - git-lfs/bin/git-lfs init
-    - echo "fetch"
-    - git-lfs/bin/git-lfs fetch
+    - git lfs install
+    - echo "pull"
+    - git lfs pull
  
  
 
