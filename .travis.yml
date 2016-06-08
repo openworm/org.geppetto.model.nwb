@@ -11,18 +11,9 @@ install:
     - cd ..    
 
 
-before_install:
-    - wget https://github.com/github/git-lfs/releases/download/v1.2.0/git-lfs-darwin-amd64-1.2.0.tar.gz
-    - tar -zxvf git-lfs-darwin-amd64-1.2.0.tar.gz
-    - export PATH=`pwd`/git-lfs-1.2.0:$PATH
-    - echo "https://${GH_TOKEN}@github.com" > .git/credentials
-    - git config credential.helper "store --file=.git/credentials"
-    - git remote set-url origin https://github.com/PlutoVR/lfs-test.git
-    - git lfs install
+before_script:
+    - git lfs init
     - git lfs pull
-    
-    
-    
  
  
 
