@@ -1,5 +1,5 @@
 language: java
-
+sudo: required
 install:
     - git clone https://github.com/openworm/org.geppetto.model.git -b $TRAVIS_BRANCH
     - cd org.geppetto.model
@@ -10,8 +10,13 @@ install:
     - mvn install
     - cd ..    
 
-    
-    
+
+before_install:
+    - #!/bin/bash
+    - curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+    - sudo apt-get install git-lfs
+    - git lfs install
+    - git lfs pull
     
  
  
