@@ -56,7 +56,9 @@ import org.geppetto.model.ModelFormat;
 import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.Type;
 import org.geppetto.model.types.TypesFactory;
+import org.geppetto.model.values.ImportValue;
 import org.geppetto.model.values.Pointer;
+import org.geppetto.model.values.Value;
 import org.geppetto.model.variables.Variable;
 import org.geppetto.model.variables.VariablesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,6 +149,14 @@ public class NWBModelInterpreterService extends AModelInterpreter
 	public File downloadModel(Pointer pointer, ModelFormat format, IAspectConfiguration aspectConfiguration) throws ModelInterpreterException
 	{
 		throw new ModelInterpreterException("Download model not implemented for NWB model interpreter");
+	}
+
+
+	@Override
+	public Value importValue(ImportValue importValue)
+			throws ModelInterpreterException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
