@@ -79,9 +79,5 @@ public class ReadNWBDataTest
 		// System.out.println("stop_index " + nwb.swpIdxStop);
 
 	}
-	@Test
-	public void importValueTest(){
-		//"pass"
-		
-	}
+	
 }
