@@ -53,8 +53,12 @@ import org.geppetto.model.GeppettoModel;
 import org.geppetto.model.nwb.NWBModelInterpreterService;
 import org.geppetto.model.types.Type;
 import org.geppetto.model.util.GeppettoVisitingException;
+import org.geppetto.model.values.ImportValue;
+import org.geppetto.model.values.TimeSeries;
+import org.geppetto.model.values.ValuesFactory;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -67,8 +71,10 @@ public class NWBModelInterpreterTest
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@Before
-	public void setUp() throws Exception
+	
+	private static NWBModelInterpreterService nwbModelInterpreter;
+	@BeforeClass
+	public static void setUp() throws Exception
 	{
 		ServicesRegistry.registerModelFormat("NWB");
 		try {
@@ -76,6 +82,9 @@ public class NWBModelInterpreterTest
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		nwbModelInterpreter = new NWBModelInterpreterService();
+		
 	}
 
 	@Test
@@ -89,8 +98,7 @@ public class NWBModelInterpreterTest
 	@Test
 	public void testReadNWB() throws ModelInterpreterException, GeppettoInitializationException, GeppettoVisitingException
 	{
-		NWBModelInterpreterService nwbModelInterpreter = new NWBModelInterpreterService();
-		URL nwbFile = this.getClass().getResource("/313862020.nwb");
+		URL url = this.getClass().getResource("/313862020.nwb");
 		GeppettoLibrary library = GeppettoFactory.eINSTANCE.createGeppettoLibrary();
 		library.setId("NWB");
 		GeppettoLibrary commonLibrary = SharedLibraryManager.getSharedCommonLibrary();
@@ -98,11 +106,20 @@ public class NWBModelInterpreterTest
 		geppettoModel.getLibraries().add(library);
 		geppettoModel.getLibraries().add(commonLibrary);
 		GeppettoModelAccess commonLibraryAccess = new GeppettoModelAccess(geppettoModel);
-
-		Type nwbType = nwbModelInterpreter.importType(nwbFile, "testName", library, commonLibraryAccess);
+		Type nwbType = nwbModelInterpreter.importType(url, "testName", library, commonLibraryAccess);
 		Assert.assertNotNull(nwbType);
 		//test that everything that should be extracted is available through the type
 		//System.out.println("Running");
+	
+		
+	}
+	
+	@Test
+	public void importValueTest() throws ModelInterpreterException{
+		//Value val = ValuesFactory.
+		ImportValue imp = null;
+		TimeSeries mt = (TimeSeries) nwbModelInterpreter.importValue(imp);
+		Assert.assertNotNull(mt);
 	}
 
 }

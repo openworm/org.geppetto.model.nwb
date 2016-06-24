@@ -58,6 +58,7 @@ import org.geppetto.model.types.Type;
 import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.values.ImportValue;
 import org.geppetto.model.values.Pointer;
+import org.geppetto.model.values.TimeSeries;
 import org.geppetto.model.values.Value;
 import org.geppetto.model.variables.Variable;
 import org.geppetto.model.variables.VariablesFactory;
@@ -74,12 +75,14 @@ public class NWBModelInterpreterService extends AModelInterpreter
 
 	@Autowired
 	private ModelInterpreterConfig nwbModelInterpreterConfig;
-
+	private H5File nwbFile = null;
+	private ReadNWBFile reader = new ReadNWBFile();
 	/*
 	 * (non-Javadoc)
 	 * 
 	 * @see org.geppetto.core.model.IModelInterpreter#getName()
 	 */
+	
 	@Override
 	public String getName()
 	{
@@ -123,16 +126,15 @@ public class NWBModelInterpreterService extends AModelInterpreter
 				throw new ModelInterpreterException(e);
 			}
 
-			H5File nwbFile = HDF5Reader.readHDF5File(url, -1l);
-			ReadNWBFile reader = new ReadNWBFile();
+			nwbFile =  HDF5Reader.readHDF5File(url, -1l);
+			reader.openNWBFile(nwbFile);
+			
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
-			String path = "/epochs/Sweep_" + sweepNumber.get(4);
+			String path = "/epochs/Sweep_" + sweepNumber.get(10);
 			reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
-
 			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType, commonLibraryAccess);
+			
 			Variable var = VariablesFactory.eINSTANCE.createVariable();
-			// Type textType = commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
-
 			var.getTypes().add(nwbModelMetadataType);
 			var.setId("metadata");
 			var.setName("metadata");
@@ -153,10 +155,17 @@ public class NWBModelInterpreterService extends AModelInterpreter
 
 
 	@Override
-	public Value importValue(ImportValue importValue)
-			throws ModelInterpreterException {
-		// TODO Auto-generated method stub
-		return null;
+	public Value importValue(ImportValue importValue) throws ModelInterpreterException {
+		// parse path to get sweep number and type of time series to return
+		
+		String path = "/epochs/Sweep_10/response/timeseries/data";
+		TimeSeries myTimeSeries;
+		try {
+			myTimeSeries = reader.getTimeSeriesData(nwbFile, path);
+		} catch (GeppettoExecutionException e) {
+			throw new ModelInterpreterException("Exception while reading timeseries");
+		}
+		return myTimeSeries;
 	}
-
+	
 }

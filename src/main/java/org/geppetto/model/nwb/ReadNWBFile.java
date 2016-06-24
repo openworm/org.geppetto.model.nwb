@@ -57,13 +57,14 @@ import org.geppetto.model.values.Unit;
 import org.geppetto.model.values.ValuesFactory;
 import org.geppetto.model.variables.Variable;
 import org.geppetto.model.variables.VariablesFactory;
+import org.springframework.jdbc.support.incrementer.MySQLMaxValueIncrementer;
 
 public class ReadNWBFile
 {
 	boolean fileOpened = false;
 	int numberOfRecordings;
 
-	private void openNWBFile(H5File nwbFile) throws GeppettoExecutionException
+	public void openNWBFile(H5File nwbFile) throws GeppettoExecutionException
 	{
 		if(!this.fileOpened)
 		{
@@ -147,7 +148,6 @@ public class ReadNWBFile
 		/*
 		 * CompositeType nwbMetadata = TypesFactory.eINSTANCE.createCompositeType(); nwbMetadata.setName("nwb_metadata"); nwbMetadata.setId("nwb_metadata_id");
 		 */
-
 		Group general = (Group) nwbFile.get(path);
 		List<HObject> members = general.getMemberList();
 		int n = members.size();
@@ -183,7 +183,6 @@ public class ReadNWBFile
 	{
 		try
 		{
-			openNWBFile(nwbFile);
 			getNWBMetadataHelper(nwbFile, path, nwbModelMetadataType, commonLibrayAccess);
 
 		}
@@ -191,19 +190,13 @@ public class ReadNWBFile
 		{
 			throw new GeppettoExecutionException("Error while reading metadata from NWB file", e);
 		}
-		finally
-		{
-			closeNWBFile(nwbFile);
-		}
 
 	}
 
 	public ArrayList<Integer> getSweepNumbers(H5File nwbFile) throws GeppettoExecutionException
 	{
 		ArrayList<Integer> sweepNumbers = new ArrayList<Integer>();
-		try
-		{
-			openNWBFile(nwbFile);
+		openNWBFile(nwbFile);
 			Group root = (Group) ((javax.swing.tree.DefaultMutableTreeNode) nwbFile.getRootNode()).getUserObject();
 			if(root == null) return null;
 			List members = root.getMemberList();
@@ -232,17 +225,20 @@ public class ReadNWBFile
 					break;
 				}
 			}
-		}
-		finally
-		{
-			closeNWBFile(nwbFile);
-		}
 
 		return sweepNumbers;
 	}
-
-	private void getTimeSeriesData(H5File nwbFile, String path, String str, CompositeType nwbModelType, GeppettoModelAccess commonLibraryAccess) throws GeppettoExecutionException
+	private void getTimeSeriesVariable( String name,  CompositeType nwbModelType, GeppettoModelAccess commonLibraryAccess, TimeSeries myTimeSeries ) throws GeppettoVisitingException{
+		Variable myVariable = VariablesFactory.eINSTANCE.createVariable();
+		myVariable.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
+		myVariable.setId(name);
+		myVariable.setName(name);
+		myVariable.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), myTimeSeries);
+		nwbModelType.getVariables().add(myVariable);
+	} 
+	public TimeSeries getTimeSeriesData(H5File nwbFile, String path) throws GeppettoExecutionException
 	{
+		TimeSeries myTimeSeries = null;
 		try
 		{
 			String unit = getAttribute(nwbFile, path, "unit");
@@ -266,11 +262,8 @@ public class ReadNWBFile
 			{
 				throw new GeppettoExecutionException("Only Volts/Amps values supported");
 			}
-			Variable var = VariablesFactory.eINSTANCE.createVariable();
-			var.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
-			var.setId(str);
-			var.setName(str);
-			TimeSeries myTimeSeries = ValuesFactory.eINSTANCE.createTimeSeries();
+			
+			myTimeSeries = ValuesFactory.eINSTANCE.createTimeSeries();
 			Unit myUnit = ValuesFactory.eINSTANCE.createUnit();
 			myUnit.setUnit(convertedUnit);
 			myTimeSeries.setUnit(myUnit);
@@ -291,8 +284,7 @@ public class ReadNWBFile
 					timeSeriesData[i] = Double.valueOf(data[i] * unitCoverter);
 				}
 				myTimeSeries.getValue().addAll(Arrays.asList(timeSeriesData));
-				var.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), myTimeSeries);
-				nwbModelType.getVariables().add(var);
+				
 			}
 			else if(readData instanceof float[])
 			{
@@ -307,8 +299,6 @@ public class ReadNWBFile
 
 				}
 				myTimeSeries.getValue().addAll(Arrays.asList(timeSeriesData));
-				var.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), myTimeSeries);
-				nwbModelType.getVariables().add(var);
 			}
 			else
 			{
@@ -320,6 +310,7 @@ public class ReadNWBFile
 		{
 			throw new GeppettoExecutionException("Error reading a variable inside readArray()", e);
 		}
+		return myTimeSeries;
 
 	}
 
@@ -327,9 +318,12 @@ public class ReadNWBFile
 	{
 		try
 		{
-			openNWBFile(nwbFile);
-			getTimeSeriesData(nwbFile, path + "/stimulus/timeseries/data", "stimulus", nwbModelType, commonLibraryAccess);
-			getTimeSeriesData(nwbFile, path + "/response/timeseries/data", "response", nwbModelType, commonLibraryAccess);
+			
+			TimeSeries myTimeSeries = getTimeSeriesData(nwbFile, path + "/stimulus/timeseries/data");
+			getTimeSeriesVariable("stimulus", nwbModelType, commonLibraryAccess, myTimeSeries);
+			myTimeSeries = getTimeSeriesData(nwbFile, path + "/response/timeseries/data");
+			getTimeSeriesVariable("response", nwbModelType, commonLibraryAccess, myTimeSeries);
+			
 			Dataset dataset = (Dataset) FileFormat.findObject(nwbFile, path + "/stimulus/idx_start");
 			Object obj = dataset.read();
 			int swpIdxStart = ((int[]) obj)[0];
@@ -346,7 +340,7 @@ public class ReadNWBFile
 			var.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
 			var.setId("time");
 			var.setName("time");
-			TimeSeries myTimeSeries = ValuesFactory.eINSTANCE.createTimeSeries();
+			myTimeSeries = ValuesFactory.eINSTANCE.createTimeSeries();
 			myTimeSeries.getValue().addAll(Arrays.asList(timeAxis));
 			var.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), myTimeSeries);
 			nwbModelType.getVariables().add(var);
@@ -354,10 +348,6 @@ public class ReadNWBFile
 		catch(Exception e)
 		{
 			throw new GeppettoExecutionException("Error while reading stimulus and response from NWB file", e);
-		}
-		finally
-		{
-			closeNWBFile(nwbFile);
 		}
 
 	}

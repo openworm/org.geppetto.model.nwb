@@ -20,20 +20,33 @@ import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.util.GeppettoVisitingException;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ReadNWBDataTest
 {
-
+	private ReadNWBFile reader = new ReadNWBFile();
+	private H5File nwbFile = null;
+	private URL url;
+	@Before
+	public void setup() throws GeppettoExecutionException{
+		
+		try {
+			url = new File("./src/main/resources/313862020.nwb").toURI().toURL();
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			throw new GeppettoExecutionException("Exception in JUNIT Test");
+		}
+		nwbFile = HDF5Reader.readHDF5File(url, -1l);
+		reader.openNWBFile(nwbFile);
+	}
 	@Test
 	public void nwbDataExtractionTest() throws MalformedURLException, GeppettoExecutionException, GeppettoVisitingException, GeppettoInitializationException
 	{
 		// this.setup();
-		URL url = new File("./src/main/resources/313862020.nwb").toURI().toURL();
-		H5File file = HDF5Reader.readHDF5File(url, -1l);
+		
 		String path = "/epochs/Sweep_12";
-		ReadNWBFile rd = new ReadNWBFile();
-		ArrayList<Integer> sweepNumber = rd.getSweepNumbers(file);
+		ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
 		GeppettoLibrary library = GeppettoFactory.eINSTANCE.createGeppettoLibrary();
 		library.setId("NWB");
 		GeppettoLibrary commonLibrary = SharedLibraryManager.getSharedCommonLibrary();
@@ -44,10 +57,10 @@ public class ReadNWBDataTest
 		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
 		nwbModelType.setId(url.getFile());
 		nwbModelType.setName(url.getFile());
-		rd.readNWBFile(file, path, nwbModelType, commonLibraryAccess);
+		reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
 
-		rd.getNWBMetadata(file, "/general", nwbModelType, commonLibraryAccess);
-		Assert.assertNotNull(file);
+		reader.getNWBMetadata(nwbFile, "/general", nwbModelType, commonLibraryAccess);
+		Assert.assertNotNull(nwbFile);
 		Assert.assertNotNull(nwbModelType);
 		Assert.assertNotNull(sweepNumber);
 
@@ -65,5 +78,10 @@ public class ReadNWBDataTest
 		// System.out.println("start_index " + nwb.swpIdxStart);
 		// System.out.println("stop_index " + nwb.swpIdxStop);
 
+	}
+	@Test
+	public void importValueTest(){
+		//"pass"
+		
 	}
 }
