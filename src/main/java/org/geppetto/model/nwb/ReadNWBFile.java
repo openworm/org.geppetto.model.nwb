@@ -30,6 +30,10 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE 
  * USE OR OTHER DEALINGS IN THE SOFTWARE.
  *******************************************************************************/
+/**
+ * @author niteshthali
+ * 
+ */
 package org.geppetto.model.nwb;
 
 import java.util.ArrayList;
@@ -46,8 +50,10 @@ import ncsa.hdf.object.h5.H5File;
 
 import org.geppetto.core.common.GeppettoExecutionException;
 import org.geppetto.core.model.GeppettoModelAccess;
+import org.geppetto.model.GeppettoLibrary;
 import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.Type;
+import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.types.TypesPackage;
 import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.util.PointerUtility;
@@ -61,8 +67,11 @@ import org.springframework.jdbc.support.incrementer.MySQLMaxValueIncrementer;
 
 public class ReadNWBFile
 {
-	boolean fileOpened = false;
-	int numberOfRecordings;
+	private boolean fileOpened = false;
+	private int numberOfRecordings;
+	private GeppettoLibrary library;
+	private GeppettoModelAccess commonLibraryAccess;
+	private CompositeType nwbModelType;
 
 	public void openNWBFile(H5File nwbFile) throws GeppettoExecutionException
 	{
@@ -101,7 +110,12 @@ public class ReadNWBFile
 			}
 		}
 	}
-
+	public void setParameters(CompositeType nwbModelType, GeppettoLibrary library, GeppettoModelAccess commonLibraryAccess) {
+		this.nwbModelType = nwbModelType;
+		this.library = library;
+		this.commonLibraryAccess = commonLibraryAccess;
+		
+	}
 	private static String getAttribute(H5File nwbFile, String path, String attributeName) throws GeppettoExecutionException
 	{
 		try
@@ -129,7 +143,7 @@ public class ReadNWBFile
 		return "";
 	}
 
-	public Variable createTextVariable(String name, String value, String id, GeppettoModelAccess commonLibraryAccess) throws GeppettoVisitingException
+	private Variable createTextVariable(String name, String value, String id) throws GeppettoVisitingException
 	{
 		Variable var = VariablesFactory.eINSTANCE.createVariable();
 		Type textType = commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
@@ -143,7 +157,7 @@ public class ReadNWBFile
 
 	}
 
-	public void getNWBMetadataHelper(H5File nwbFile, String path, CompositeType nwbModelMetadataType, GeppettoModelAccess commonLibrayAccess) throws OutOfMemoryError, Exception
+	public void getNWBMetadataHelper(H5File nwbFile, String path, CompositeType nwbModelMetadataType) throws OutOfMemoryError, Exception
 	{
 		/*
 		 * CompositeType nwbMetadata = TypesFactory.eINSTANCE.createCompositeType(); nwbMetadata.setName("nwb_metadata"); nwbMetadata.setId("nwb_metadata_id");
@@ -160,7 +174,7 @@ public class ReadNWBFile
 				String newPath = path + "/" + obj.toString();
 				System.out.println(newPath);
 				// Group epochs = (Group) obj;
-				getNWBMetadataHelper(nwbFile, newPath, nwbModelMetadataType, commonLibrayAccess);
+				getNWBMetadataHelper(nwbFile, newPath, nwbModelMetadataType);
 			}
 			else
 			{
@@ -172,18 +186,18 @@ public class ReadNWBFile
 					data = (Dataset) FileFormat.findObject(nwbFile, PointerUtility.getPathWithoutTypes(path + name));
 				}
 				String value = ((String[]) data.read())[0];
-				Variable var = createTextVariable(name, value, id, commonLibrayAccess);
+				Variable var = createTextVariable(name, value, id);
 				nwbModelMetadataType.getVariables().add(var);
 				System.out.println(obj.toString());
 			}
 		}
 	}
 
-	public void getNWBMetadata(H5File nwbFile, String path, CompositeType nwbModelMetadataType, GeppettoModelAccess commonLibrayAccess) throws GeppettoExecutionException
+	public void getNWBMetadata(H5File nwbFile, String path, CompositeType nwbModelMetadataType) throws GeppettoExecutionException
 	{
 		try
 		{
-			getNWBMetadataHelper(nwbFile, path, nwbModelMetadataType, commonLibrayAccess);
+			getNWBMetadataHelper(nwbFile, path, nwbModelMetadataType);
 
 		}
 		catch(Exception e)
@@ -192,7 +206,135 @@ public class ReadNWBFile
 		}
 
 	}
-
+	public String readSingleDataField(H5File nwbFile, String path) throws GeppettoExecutionException{
+		String value = null;
+		try
+		{
+			Dataset data = (Dataset) FileFormat.findObject(nwbFile, path);
+			if(data == null)
+			{
+				data = (Dataset) FileFormat.findObject(nwbFile, PointerUtility.getPathWithoutTypes(path));
+			}
+			Object obj = data.read();
+			if(obj instanceof float[])
+			{
+				Float d = ((float[]) obj)[0];
+				value =  d.toString();
+			}
+			if(obj instanceof double[])
+			{
+				Double d = ((double[]) obj)[0];
+				value =  d.toString();
+			}
+			if(obj instanceof int[])
+			{
+				Integer v = ((int[]) obj)[0];
+				value =  v.toString();
+			}
+			if(obj instanceof String[])
+			{
+				 value = ((String[]) obj)[0];
+				
+			}
+			
+			
+			return value;
+		}catch(Exception e){
+			throw new GeppettoExecutionException("Error reading a variable from the recording", e);
+		}
+		
+		
+	}
+	public void getInitialDisplayData(H5File nwbFile) throws GeppettoExecutionException
+	{
+		try {
+		openNWBFile(nwbFile);
+		ArrayList<Integer> sweepNumebers = getSweepNumbers(nwbFile);
+		
+		
+		
+		
+		for(int i=0; i<sweepNumebers.size(); i++)
+		{
+			int number  = sweepNumebers.get(i);
+			String sweep = "Sweep_" + number;
+			
+			CompositeType sweepType = TypesFactory.eINSTANCE.createCompositeType();
+			sweepType.setId("sweepType_" + number);
+			sweepType.setName("sweepType_" + number);
+			library.getTypes().add(sweepType);
+			
+			Variable var = VariablesFactory.eINSTANCE.createVariable();
+			var.getTypes().add(sweepType);
+			var.setId(sweep);
+			var.setName(sweep);
+			nwbModelType.getVariables().add(var);	
+			
+		
+			CompositeType signalType = TypesFactory.eINSTANCE.createCompositeType();
+			signalType.setId("signalType_" + number);
+			signalType.setName("signalType_" + number);
+			library.getTypes().add(signalType);
+			
+			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
+			stimulus.getTypes().add(signalType);
+			stimulus.setId("stimulus");
+			stimulus.setName("stimulus");
+			sweepType.getVariables().add(stimulus);
+			
+			Variable response = VariablesFactory.eINSTANCE.createVariable();
+			response.getTypes().add(signalType);
+			response.setId("response");
+			response.setName("response");
+			sweepType.getVariables().add(response);
+			
+			Variable recording = VariablesFactory.eINSTANCE.createVariable();
+			recording.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
+			recording.setId("recording");
+			recording.setName("recording");
+			signalType.getVariables().add(recording);
+			
+			
+			CompositeType stimulusMetadataType = TypesFactory.eINSTANCE.createCompositeType();
+			stimulusMetadataType.setId("stimulusMetadataType_" + number);
+			stimulusMetadataType.setName("stimulusMetadataType_" + number);
+			library.getTypes().add(stimulusMetadataType);
+			
+			Variable metadata = VariablesFactory.eINSTANCE.createVariable();
+			metadata.getTypes().add(stimulusMetadataType);
+			metadata.setId("metadata");
+			metadata.setName("metadata" + sweep);
+			signalType.getVariables().add(metadata);
+			
+			String stimulus_path = "/epochs/" + sweep + "/stimulus/timeseries";	
+			String value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_mv");
+			var = createTextVariable("amplitude", value, "amplitude");
+			stimulusMetadataType.getVariables().add(var);
+			
+			value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_name");
+			var = createTextVariable("name", value, "name");
+			stimulusMetadataType.getVariables().add(var);
+			
+			
+//			String response_path = "/epochs" + sweep + "/response/timeseries";
+//			value  = readSingleDataField(nwbFile, response_path + "/aibs_stimulus_amplitude_mv");
+//			var = createTextVariable("amplitude", value, "amplitude");
+//			signal.getVariables().add(var);
+//			
+//			value = readSingleDataField(nwbFile, response_path + "/aibs_stimulus_name");
+//			var = createTextVariable("name", value, "name");
+//			signal.getVariables().add(var);
+			
+		}
+		} catch (GeppettoExecutionException e) {
+			throw new GeppettoExecutionException("Exception while reading Initial values for display");
+		} 
+		catch (GeppettoVisitingException e) {
+			throw new GeppettoExecutionException("Exception while reading Initial values for display");
+		}
+		
+		
+	}
 	public ArrayList<Integer> getSweepNumbers(H5File nwbFile) throws GeppettoExecutionException
 	{
 		ArrayList<Integer> sweepNumbers = new ArrayList<Integer>();
@@ -228,7 +370,7 @@ public class ReadNWBFile
 
 		return sweepNumbers;
 	}
-	private void getTimeSeriesVariable( String name,  CompositeType nwbModelType, GeppettoModelAccess commonLibraryAccess, TimeSeries myTimeSeries ) throws GeppettoVisitingException{
+	private void getTimeSeriesVariable( String name, TimeSeries myTimeSeries ) throws GeppettoVisitingException{
 		Variable myVariable = VariablesFactory.eINSTANCE.createVariable();
 		myVariable.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
 		myVariable.setId(name);
@@ -314,22 +456,23 @@ public class ReadNWBFile
 
 	}
 
-	public void readNWBFile(H5File nwbFile, String path, CompositeType nwbModelType, GeppettoModelAccess commonLibraryAccess) throws GeppettoExecutionException
+	public void readNWBFile(H5File nwbFile, String path) throws GeppettoExecutionException
 	{
 		try
 		{
 			
 			TimeSeries myTimeSeries = getTimeSeriesData(nwbFile, path + "/stimulus/timeseries/data");
-			getTimeSeriesVariable("stimulus", nwbModelType, commonLibraryAccess, myTimeSeries);
+			getTimeSeriesVariable("stimulus", myTimeSeries);
 			myTimeSeries = getTimeSeriesData(nwbFile, path + "/response/timeseries/data");
-			getTimeSeriesVariable("response", nwbModelType, commonLibraryAccess, myTimeSeries);
+			getTimeSeriesVariable("response", myTimeSeries);
 			
-			Dataset dataset = (Dataset) FileFormat.findObject(nwbFile, path + "/stimulus/idx_start");
+			/*Dataset dataset = (Dataset) FileFormat.findObject(nwbFile, path + "/stimulus/idx_start");
 			Object obj = dataset.read();
 			int swpIdxStart = ((int[]) obj)[0];
 			dataset = (Dataset) FileFormat.findObject(nwbFile, path + "/stimulus/count");
 			int len = ((int[]) dataset.read())[0];
-			len = swpIdxStart + len - 1;
+			len = swpIdxStart + len - 1;*/
+			
 			String samplingRate_str = getAttribute(nwbFile, path + "/response/timeseries/starting_time", "rate");
 			Double samplingRate = Double.parseDouble(samplingRate_str);
 			double dt = 1.0 / samplingRate;
@@ -351,4 +494,6 @@ public class ReadNWBFile
 		}
 
 	}
+
+	
 }

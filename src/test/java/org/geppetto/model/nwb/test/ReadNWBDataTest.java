@@ -28,25 +28,18 @@ public class ReadNWBDataTest
 	private ReadNWBFile reader = new ReadNWBFile();
 	private H5File nwbFile = null;
 	private URL url;
+	CompositeType nwbModelType;
 	@Before
-	public void setup() throws GeppettoExecutionException{
+	public void setup() throws GeppettoExecutionException, GeppettoInitializationException, GeppettoVisitingException{
 		
 		try {
 			url = new File("./src/main/resources/313862020.nwb").toURI().toURL();
+			
+			
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			throw new GeppettoExecutionException("Exception in JUNIT Test");
 		}
-		nwbFile = HDF5Reader.readHDF5File(url, -1l);
-		reader.openNWBFile(nwbFile);
-	}
-	@Test
-	public void nwbDataExtractionTest() throws MalformedURLException, GeppettoExecutionException, GeppettoVisitingException, GeppettoInitializationException
-	{
-		// this.setup();
-		
-		String path = "/epochs/Sweep_12";
-		ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
 		GeppettoLibrary library = GeppettoFactory.eINSTANCE.createGeppettoLibrary();
 		library.setId("NWB");
 		GeppettoLibrary commonLibrary = SharedLibraryManager.getSharedCommonLibrary();
@@ -54,12 +47,24 @@ public class ReadNWBDataTest
 		geppettoModel.getLibraries().add(library);
 		geppettoModel.getLibraries().add(commonLibrary);
 		GeppettoModelAccess commonLibraryAccess = new GeppettoModelAccess(geppettoModel);
-		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
+		nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
 		nwbModelType.setId(url.getFile());
 		nwbModelType.setName(url.getFile());
-		reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
-
-		reader.getNWBMetadata(nwbFile, "/general", nwbModelType, commonLibraryAccess);
+		nwbFile = HDF5Reader.readHDF5File(url, -1l);
+		reader.setParameters(nwbModelType, library, commonLibraryAccess);
+		reader.openNWBFile(nwbFile);
+		
+	}
+	@Test
+	public void nwbDataExtractionTest() throws MalformedURLException, GeppettoExecutionException, GeppettoVisitingException, GeppettoInitializationException
+	{
+		// this.setup();
+		
+		String path = "/epochs/Sweep_";
+		ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
+		
+		reader.readNWBFile(nwbFile, path + sweepNumber.get(10));
+		reader.getNWBMetadata(nwbFile, "/general", nwbModelType);
 		Assert.assertNotNull(nwbFile);
 		Assert.assertNotNull(nwbModelType);
 		Assert.assertNotNull(sweepNumber);

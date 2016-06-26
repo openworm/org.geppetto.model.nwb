@@ -111,10 +111,18 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
 		nwbModelType.setId(url.getFile());
 		nwbModelType.setName(url.getFile());
+		
 		CompositeType nwbModelMetadataType = TypesFactory.eINSTANCE.createCompositeType();
 		nwbModelMetadataType.setId("nwbMetadata");
 		nwbModelMetadataType.setName("nwbMetadata");
 		library.getTypes().add(nwbModelMetadataType);
+		
+		CompositeType sweepType = TypesFactory.eINSTANCE.createCompositeType();
+		sweepType.setId("sweepType");
+		sweepType.setName("sweepType");
+		library.getTypes().add(sweepType);
+		
+		reader.setParameters(nwbModelType, library, commonLibraryAccess);
 		try
 		{
 			try
@@ -131,14 +139,18 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
 			String path = "/epochs/Sweep_" + sweepNumber.get(10);
-			reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
-			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType, commonLibraryAccess);
+			reader.readNWBFile(nwbFile, path);
+			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType);
 			
 			Variable var = VariablesFactory.eINSTANCE.createVariable();
 			var.getTypes().add(nwbModelMetadataType);
 			var.setId("metadata");
 			var.setName("metadata");
 			nwbModelType.getVariables().add(var);
+			
+			reader.getInitialDisplayData(nwbFile);
+
+			
 		}
 		catch(GeppettoExecutionException e)
 		{
