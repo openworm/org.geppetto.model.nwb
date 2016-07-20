@@ -57,6 +57,7 @@ import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.types.TypesPackage;
 import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.util.PointerUtility;
+import org.geppetto.model.values.ImportValue;
 import org.geppetto.model.values.Text;
 import org.geppetto.model.values.TimeSeries;
 import org.geppetto.model.values.Unit;
@@ -183,7 +184,7 @@ public class ReadNWBFile
 				Dataset data = (Dataset) FileFormat.findObject(nwbFile, path + "/" + name);
 				if(data == null)
 				{
-					data = (Dataset) FileFormat.findObject(nwbFile, PointerUtility.getPathWithoutTypes(path + name));
+					data = (Dataset) FileFormat.findObject(nwbFile, PointerUtility.getPathWithoutTypes(path + "/" + name));
 				}
 				String value = ((String[]) data.read())[0];
 				Variable var = createTextVariable(name, value, id);
@@ -193,11 +194,20 @@ public class ReadNWBFile
 		}
 	}
 
-	public void getNWBMetadata(H5File nwbFile, String path, CompositeType nwbModelMetadataType) throws GeppettoExecutionException
+	public void getNWBMetadata(H5File nwbFile, String path) throws GeppettoExecutionException
 	{
 		try
 		{
+			CompositeType nwbModelMetadataType = TypesFactory.eINSTANCE.createCompositeType();
+			nwbModelMetadataType.setId("nwbMetadata");
+			nwbModelMetadataType.setName("nwbMetadata");
+			library.getTypes().add(nwbModelMetadataType);
 			getNWBMetadataHelper(nwbFile, path, nwbModelMetadataType);
+			Variable var = VariablesFactory.eINSTANCE.createVariable();
+			var.getTypes().add(nwbModelMetadataType);
+			var.setId("metadata");
+			var.setName("metadata");
+			nwbModelType.getVariables().add(var);
 
 		}
 		catch(Exception e)
@@ -206,10 +216,9 @@ public class ReadNWBFile
 		}
 
 	}
-	public String readSingleDataField(H5File nwbFile, String path) throws GeppettoExecutionException{
+	public String readSingleDataField(H5File nwbFile, String path){	
 		String value = null;
-		try
-		{
+		try{
 			Dataset data = (Dataset) FileFormat.findObject(nwbFile, path);
 			if(data == null)
 			{
@@ -237,23 +246,16 @@ public class ReadNWBFile
 				
 			}
 			
-			
 			return value;
 		}catch(Exception e){
-			throw new GeppettoExecutionException("Error reading a variable from the recording", e);
-		}
-		
+			return "";
+		}	
 		
 	}
 	public void getInitialDisplayData(H5File nwbFile) throws GeppettoExecutionException
 	{
 		try {
-		openNWBFile(nwbFile);
 		ArrayList<Integer> sweepNumebers = getSweepNumbers(nwbFile);
-		
-		
-		
-		
 		for(int i=0; i<sweepNumebers.size(); i++)
 		{
 			int number  = sweepNumebers.get(i);
@@ -264,57 +266,99 @@ public class ReadNWBFile
 			sweepType.setName("sweepType_" + number);
 			library.getTypes().add(sweepType);
 			
-			Variable var = VariablesFactory.eINSTANCE.createVariable();
-			var.getTypes().add(sweepType);
-			var.setId(sweep);
-			var.setName(sweep);
-			nwbModelType.getVariables().add(var);	
+			Variable sweepVar = VariablesFactory.eINSTANCE.createVariable();
+			sweepVar.getTypes().add(sweepType);
+			sweepVar.setId(sweep);
+			sweepVar.setName(sweep);
+			nwbModelType.getVariables().add(sweepVar);	
+			// can a type have multiple vars of same type ?
+			// ask  matteo, if I keep same signalType for both response and stimulus then 
+			//Instances.getInstance("nwbSample.Sweep_10.response_10.recording_10").getValue().getPath(); returns 
+			//"Model.nwbLibrary.signalType_10.recording_10.ImportValue", unable to differentiate between stimulus and response
+			// hence creating separate types for both
 			
-		
-			CompositeType signalType = TypesFactory.eINSTANCE.createCompositeType();
-			signalType.setId("signalType_" + number);
-			signalType.setName("signalType_" + number);
-			library.getTypes().add(signalType);
+			CompositeType stimulusSignalType = TypesFactory.eINSTANCE.createCompositeType();
+			stimulusSignalType.setId("stimulusT_Sweep_" + number);
+			stimulusSignalType.setName("Stimulus_Sweep_" + number);
+			library.getTypes().add(stimulusSignalType);
+			
+			CompositeType responseSignalType = TypesFactory.eINSTANCE.createCompositeType();
+			responseSignalType.setId("responseT_Sweep_" + number);
+			responseSignalType.setName("Response_Sweep_" + number);
+			library.getTypes().add(responseSignalType);
 			
 			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
-			stimulus.getTypes().add(signalType);
+			stimulus.getTypes().add(stimulusSignalType);
 			stimulus.setId("stimulus");
 			stimulus.setName("stimulus");
 			sweepType.getVariables().add(stimulus);
 			
 			Variable response = VariablesFactory.eINSTANCE.createVariable();
-			response.getTypes().add(signalType);
+			response.getTypes().add(responseSignalType);
 			response.setId("response");
 			response.setName("response");
 			sweepType.getVariables().add(response);
 			
+			// can same variable have multiple types (STATE_VARIABLE_TYPE)? This is not working
 			Variable recording = VariablesFactory.eINSTANCE.createVariable();
 			recording.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
 			recording.setId("recording");
 			recording.setName("recording");
-			signalType.getVariables().add(recording);
+			ImportValue importvalue = ValuesFactory.eINSTANCE.createImportValue();
+			recording.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), importvalue);
+			
+			Variable recording1 = VariablesFactory.eINSTANCE.createVariable();
+			recording1.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
+			recording1.setId("recording");
+			recording1.setName("recording");
+			ImportValue importvalue1 = ValuesFactory.eINSTANCE.createImportValue();
+			recording1.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), importvalue1);
+			
+			stimulusSignalType.getVariables().add(recording);
+			responseSignalType.getVariables().add(recording1);
 			
 			
-			CompositeType stimulusMetadataType = TypesFactory.eINSTANCE.createCompositeType();
-			stimulusMetadataType.setId("stimulusMetadataType_" + number);
-			stimulusMetadataType.setName("stimulusMetadataType_" + number);
-			library.getTypes().add(stimulusMetadataType);
+			CompositeType signalMetadataType = TypesFactory.eINSTANCE.createCompositeType();
+			signalMetadataType.setId("signalMetadataType" + number);
+			signalMetadataType.setName("signalMetadataType" + number);
+			library.getTypes().add(signalMetadataType);
+			
+			/*CompositeType respnseMetadataType = TypesFactory.eINSTANCE.createCompositeType();
+			respnseMetadataType.setId("respnseMetadataType_" + number);
+			respnseMetadataType.setName("respnseMetadataType_" + number);
+			library.getTypes().add(respnseMetadataType);*/
+			
 			
 			Variable metadata = VariablesFactory.eINSTANCE.createVariable();
-			metadata.getTypes().add(stimulusMetadataType);
+			metadata.getTypes().add(signalMetadataType);
 			metadata.setId("metadata");
-			metadata.setName("metadata" + sweep);
-			signalType.getVariables().add(metadata);
+			metadata.setName("metadata");
+			stimulusSignalType.getVariables().add(metadata);
+			
+			Variable metadata1 = VariablesFactory.eINSTANCE.createVariable();
+			metadata1.getTypes().add(signalMetadataType);
+			metadata1.setId("metadata");
+			metadata1.setName("metadata");
+			responseSignalType.getVariables().add(metadata1);
 			
 			String stimulus_path = "/epochs/" + sweep + "/stimulus/timeseries";	
-			String value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_mv");
+			String value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_name");
+			Variable var = createTextVariable("name", value, "name");
+			signalMetadataType.getVariables().add(var);
+			
+			value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_mv");
+			if (value == ""){
+				value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_pa");
+			}
 			var = createTextVariable("amplitude", value, "amplitude");
-			stimulusMetadataType.getVariables().add(var);
+			signalMetadataType.getVariables().add(var);
 			
-			value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_name");
-			var = createTextVariable("name", value, "name");
-			stimulusMetadataType.getVariables().add(var);
-			
+//			
+//			responseMetadata.getTypes().add(stimulusMetadataType);
+//			responseMetadata.setId("metadata_" + number);
+//			responseMetadata.setName("metadata_" + number);
+//			responseSignalType.getVariables().add(responseMetadata);
+//			
 			
 //			String response_path = "/epochs" + sweep + "/response/timeseries";
 //			value  = readSingleDataField(nwbFile, response_path + "/aibs_stimulus_amplitude_mv");
@@ -409,7 +453,7 @@ public class ReadNWBFile
 			Unit myUnit = ValuesFactory.eINSTANCE.createUnit();
 			myUnit.setUnit(convertedUnit);
 			myTimeSeries.setUnit(myUnit);
-
+			
 			Dataset v = (Dataset) FileFormat.findObject(nwbFile, path);
 			if(v == null)
 			{

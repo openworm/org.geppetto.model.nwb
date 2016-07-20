@@ -64,7 +64,7 @@ public class ReadNWBDataTest
 		ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
 		
 		reader.readNWBFile(nwbFile, path + sweepNumber.get(10));
-		reader.getNWBMetadata(nwbFile, "/general", nwbModelType);
+		reader.getNWBMetadata(nwbFile, "/general");
 		Assert.assertNotNull(nwbFile);
 		Assert.assertNotNull(nwbModelType);
 		Assert.assertNotNull(sweepNumber);

@@ -111,17 +111,6 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
 		nwbModelType.setId(url.getFile());
 		nwbModelType.setName(url.getFile());
-		
-		CompositeType nwbModelMetadataType = TypesFactory.eINSTANCE.createCompositeType();
-		nwbModelMetadataType.setId("nwbMetadata");
-		nwbModelMetadataType.setName("nwbMetadata");
-		library.getTypes().add(nwbModelMetadataType);
-		
-		CompositeType sweepType = TypesFactory.eINSTANCE.createCompositeType();
-		sweepType.setId("sweepType");
-		sweepType.setName("sweepType");
-		library.getTypes().add(sweepType);
-		
 		reader.setParameters(nwbModelType, library, commonLibraryAccess);
 		try
 		{
@@ -136,20 +125,11 @@ public class NWBModelInterpreterService extends AModelInterpreter
 
 			nwbFile =  HDF5Reader.readHDF5File(url, -1l);
 			reader.openNWBFile(nwbFile);
-			
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
 			String path = "/epochs/Sweep_" + sweepNumber.get(10);
 			reader.readNWBFile(nwbFile, path);
-			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType);
-			
-			Variable var = VariablesFactory.eINSTANCE.createVariable();
-			var.getTypes().add(nwbModelMetadataType);
-			var.setId("metadata");
-			var.setName("metadata");
-			nwbModelType.getVariables().add(var);
-			
+			reader.getNWBMetadata(nwbFile, "/general");
 			reader.getInitialDisplayData(nwbFile);
-
 			
 		}
 		catch(GeppettoExecutionException e)
@@ -169,7 +149,7 @@ public class NWBModelInterpreterService extends AModelInterpreter
 	@Override
 	public Value importValue(ImportValue importValue) throws ModelInterpreterException {
 		// parse path to get sweep number and type of time series to return
-		
+		String a = "";
 		String path = "/epochs/Sweep_10/response/timeseries/data";
 		TimeSeries myTimeSeries;
 		try {
