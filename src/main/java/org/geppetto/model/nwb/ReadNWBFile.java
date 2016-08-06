@@ -279,12 +279,12 @@ public class ReadNWBFile
 			
 			CompositeType stimulusSignalType = TypesFactory.eINSTANCE.createCompositeType();
 			stimulusSignalType.setId("stimulusT_Sweep_" + number);
-			stimulusSignalType.setName("Stimulus_Sweep_" + number);
+			stimulusSignalType.setName("stimulus_Sweep_" + number);
 			library.getTypes().add(stimulusSignalType);
 			
 			CompositeType responseSignalType = TypesFactory.eINSTANCE.createCompositeType();
 			responseSignalType.setId("responseT_Sweep_" + number);
-			responseSignalType.setName("Response_Sweep_" + number);
+			responseSignalType.setName("response_Sweep_" + number);
 			library.getTypes().add(responseSignalType);
 			
 			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();

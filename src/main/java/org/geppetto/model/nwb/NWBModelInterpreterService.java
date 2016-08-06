@@ -39,10 +39,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import ncsa.hdf.object.h5.H5File;
 import ncsa.hdf.utils.SetNatives;
 
+import org.apache.velocity.runtime.parser.Token;
 import org.geppetto.core.beans.ModelInterpreterConfig;
 import org.geppetto.core.common.GeppettoExecutionException;
 import org.geppetto.core.common.HDF5Reader;
@@ -148,16 +150,28 @@ public class NWBModelInterpreterService extends AModelInterpreter
 
 	@Override
 	public Value importValue(ImportValue importValue) throws ModelInterpreterException {
-		// parse path to get sweep number and type of time series to return
-		String a = "";
-		String path = "/epochs/Sweep_10/response/timeseries/data";
+		String path = ((Variable)importValue.eContainer().eContainer()).getPath();
+		StringTokenizer st = new StringTokenizer(path, ".");
+		String dataPath = null;
+		while(st.hasMoreElements()){
+			String token = st.nextToken();
+			if(token.startsWith("stimulus") || token.startsWith("response")){
+				String[] parts = token.split("_");
+				if (parts.length != 3)
+					break;
+				 dataPath =  "/epochs/" + parts[1] + "_" + parts[2] + "/" + parts[0].replace("T", "") + "/timeseries/data";
+				 break; 
+			}
+		}
 		TimeSeries myTimeSeries;
 		try {
-			myTimeSeries = reader.getTimeSeriesData(nwbFile, path);
+			if (dataPath == null)
+				throw new ModelInterpreterException("Exception while reading time series for lazy loading");
+			myTimeSeries = reader.getTimeSeriesData(nwbFile, dataPath);
 		} catch (GeppettoExecutionException e) {
-			throw new ModelInterpreterException("Exception while reading timeseries");
+			throw new ModelInterpreterException("Exception while reading time series for lazy loading");
 		}
-		return myTimeSeries;
+		return (Value)myTimeSeries;
 	}
 	
 }
