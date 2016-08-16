@@ -44,7 +44,6 @@ import java.util.StringTokenizer;
 import ncsa.hdf.object.h5.H5File;
 import ncsa.hdf.utils.SetNatives;
 
-import org.apache.velocity.runtime.parser.Token;
 import org.geppetto.core.beans.ModelInterpreterConfig;
 import org.geppetto.core.common.GeppettoExecutionException;
 import org.geppetto.core.common.HDF5Reader;
@@ -63,7 +62,6 @@ import org.geppetto.model.values.Pointer;
 import org.geppetto.model.values.TimeSeries;
 import org.geppetto.model.values.Value;
 import org.geppetto.model.variables.Variable;
-import org.geppetto.model.variables.VariablesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
