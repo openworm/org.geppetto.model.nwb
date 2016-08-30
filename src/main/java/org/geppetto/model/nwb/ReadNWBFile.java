@@ -36,6 +36,7 @@
  */
 package org.geppetto.model.nwb;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -187,6 +188,10 @@ public class ReadNWBFile
 					data = (Dataset) FileFormat.findObject(nwbFile, PointerUtility.getPathWithoutTypes(path + "/" + name));
 				}
 				String value = ((String[]) data.read())[0];
+				if (name.equals("aibs_specimen_id")){
+					name = "Allen Cell Type";
+					value = "http://celltypes.brain-map.org/mouse/experiment/electrophysiology/" + value;
+				}
 				Variable var = createTextVariable(name, value, id);
 				nwbModelMetadataType.getVariables().add(var);
 				System.out.println(obj.toString());
@@ -218,6 +223,7 @@ public class ReadNWBFile
 	}
 	public String readSingleDataField(H5File nwbFile, String path){	
 		String value = null;
+		DecimalFormat df = new DecimalFormat("#####0.0");
 		try{
 			Dataset data = (Dataset) FileFormat.findObject(nwbFile, path);
 			if(data == null)
@@ -228,12 +234,12 @@ public class ReadNWBFile
 			if(obj instanceof float[])
 			{
 				Float d = ((float[]) obj)[0];
-				value =  d.toString();
+				value = df.format(d);
 			}
 			if(obj instanceof double[])
 			{
 				Double d = ((double[]) obj)[0];
-				value =  d.toString();
+				value = df.format(d);
 			}
 			if(obj instanceof int[])
 			{
@@ -351,6 +357,10 @@ public class ReadNWBFile
 				value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_pa");
 			}
 			var = createTextVariable("amplitude", value, "amplitude");
+			signalMetadataType.getVariables().add(var);
+			
+			value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_interval");
+			var = createTextVariable("interval", value, "interval");
 			signalMetadataType.getVariables().add(var);
 			
 //			
