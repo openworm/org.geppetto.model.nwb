@@ -129,7 +129,7 @@ public class NWBModelInterpreterService extends AModelInterpreter
 			String path = "/epochs/Sweep_" + sweepNumber.get(10);
 			reader.readNWBFile(nwbFile, path);
 			reader.getNWBMetadata(nwbFile, "/general");
-			reader.getInitialDisplayData(nwbFile);
+			reader.getInitialData(nwbFile);
 			
 		}
 		catch(GeppettoExecutionException e)
