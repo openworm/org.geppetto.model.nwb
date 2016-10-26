@@ -10,6 +10,8 @@ install:
     - mvn install
     - cd ..    
 
+<<<<<<< HEAD
+=======
 
 before_install:
     - #!/bin/bash
@@ -20,5 +22,11 @@ before_install:
     
  
  
+>>>>>>> refs/remotes/origin/development
 
-
+before_install:
+    - #!/bin/bash
+    - curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+    - sudo apt-get install git-lfs
+    - git lfs install
+    - git lfs pull

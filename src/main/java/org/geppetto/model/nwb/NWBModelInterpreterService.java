@@ -39,6 +39,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import ncsa.hdf.object.h5.H5File;
 import ncsa.hdf.utils.SetNatives;
@@ -56,9 +57,11 @@ import org.geppetto.model.ModelFormat;
 import org.geppetto.model.types.CompositeType;
 import org.geppetto.model.types.Type;
 import org.geppetto.model.types.TypesFactory;
+import org.geppetto.model.values.ImportValue;
 import org.geppetto.model.values.Pointer;
+import org.geppetto.model.values.TimeSeries;
+import org.geppetto.model.values.Value;
 import org.geppetto.model.variables.Variable;
-import org.geppetto.model.variables.VariablesFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -72,12 +75,14 @@ public class NWBModelInterpreterService extends AModelInterpreter
 
 	@Autowired
 	private ModelInterpreterConfig nwbModelInterpreterConfig;
-
+	private H5File nwbFile = null;
+	private ReadNWBFile reader = new ReadNWBFile();
 	/*
 	 * (non-Javadoc)
 	 * 
 	 * @see org.geppetto.core.model.IModelInterpreter#getName()
 	 */
+	
 	@Override
 	public String getName()
 	{
@@ -106,10 +111,7 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		CompositeType nwbModelType = TypesFactory.eINSTANCE.createCompositeType();
 		nwbModelType.setId(url.getFile());
 		nwbModelType.setName(url.getFile());
-		CompositeType nwbModelMetadataType = TypesFactory.eINSTANCE.createCompositeType();
-		nwbModelMetadataType.setId("nwbMetadata");
-		nwbModelMetadataType.setName("nwbMetadata");
-		library.getTypes().add(nwbModelMetadataType);
+		reader.setParameters(nwbModelType, library, commonLibraryAccess);
 		try
 		{
 			try
@@ -121,20 +123,14 @@ public class NWBModelInterpreterService extends AModelInterpreter
 				throw new ModelInterpreterException(e);
 			}
 
-			H5File nwbFile = HDF5Reader.readHDF5File(url, -1l);
-			ReadNWBFile reader = new ReadNWBFile();
+			nwbFile =  HDF5Reader.readHDF5File(url, -1l);
+			reader.openNWBFile(nwbFile);
 			ArrayList<Integer> sweepNumber = reader.getSweepNumbers(nwbFile);
-			String path = "/epochs/Sweep_" + sweepNumber.get(4);
-			reader.readNWBFile(nwbFile, path, nwbModelType, commonLibraryAccess);
-
-			reader.getNWBMetadata(nwbFile, "/general", nwbModelMetadataType, commonLibraryAccess);
-			Variable var = VariablesFactory.eINSTANCE.createVariable();
-			// Type textType = commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE);
-
-			var.getTypes().add(nwbModelMetadataType);
-			var.setId("metadata");
-			var.setName("metadata");
-			nwbModelType.getVariables().add(var);
+			String path = "/epochs/Sweep_" + sweepNumber.get(10);
+			reader.readNWBFile(nwbFile, path);
+			reader.getNWBMetadata(nwbFile, "/general");
+			reader.getInitialData(nwbFile);
+			
 		}
 		catch(GeppettoExecutionException e)
 		{
@@ -149,4 +145,31 @@ public class NWBModelInterpreterService extends AModelInterpreter
 		throw new ModelInterpreterException("Download model not implemented for NWB model interpreter");
 	}
 
+
+	@Override
+	public Value importValue(ImportValue importValue) throws ModelInterpreterException {
+		String path = ((Variable)importValue.eContainer().eContainer()).getPath();
+		StringTokenizer st = new StringTokenizer(path, ".");
+		String dataPath = null;
+		while(st.hasMoreElements()){
+			String token = st.nextToken();
+			if(token.startsWith("stimulus") || token.startsWith("response")){
+				String[] parts = token.split("_");
+				if (parts.length != 3)
+					break;
+				 dataPath =  "/epochs/" + parts[1] + "_" + parts[2] + "/" + parts[0].replace("T", "") + "/timeseries/data";
+				 break; 
+			}
+		}
+		TimeSeries myTimeSeries;
+		try {
+			if (dataPath == null)
+				throw new ModelInterpreterException("Exception while reading time series for lazy loading");
+			myTimeSeries = reader.getTimeSeriesData(nwbFile, dataPath);
+		} catch (GeppettoExecutionException e) {
+			throw new ModelInterpreterException("Exception while reading time series for lazy loading");
+		}
+		return (Value)myTimeSeries;
+	}
+	
 }
