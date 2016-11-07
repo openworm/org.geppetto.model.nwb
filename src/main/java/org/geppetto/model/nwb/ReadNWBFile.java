@@ -49,6 +49,7 @@ import ncsa.hdf.object.Group;
 import ncsa.hdf.object.HObject;
 import ncsa.hdf.object.h5.H5File;
 
+import org.eclipse.emf.ecore.EClass;
 import org.geppetto.core.common.GeppettoExecutionException;
 import org.geppetto.core.model.GeppettoModelAccess;
 import org.geppetto.model.GeppettoLibrary;
@@ -58,6 +59,7 @@ import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.types.TypesPackage;
 import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.util.PointerUtility;
+import org.geppetto.model.values.Composite;
 import org.geppetto.model.values.Image;
 import org.geppetto.model.values.ImageFormat;
 import org.geppetto.model.values.ImportValue;
@@ -281,97 +283,116 @@ public class ReadNWBFile
 	public void getInitialData(H5File nwbFile) throws GeppettoExecutionException
 	{
 		try {
-		ArrayList<Integer> sweepNumebers = getSweepNumbers(nwbFile);
-		for(int i=0; i<sweepNumebers.size(); i++)
-		{
-			int number  = sweepNumebers.get(i);
-			String sweep = "Sweep_" + number;
+			CompositeType sweep = TypesFactory.eINSTANCE.createCompositeType();
+			sweep.setId("sweep");
+			sweep.setName("sweep");
+			library.getTypes().add(sweep);
 			
-			CompositeType sweepType = TypesFactory.eINSTANCE.createCompositeType();
-			sweepType.setId("sweepType_" + number);
-			sweepType.setName("sweepType_" + number);
-			library.getTypes().add(sweepType);
+			CompositeType signal = TypesFactory.eINSTANCE.createCompositeType();
+			signal.setId("signal");
+			signal.setName("signal");
+			library.getTypes().add(signal);
 			
-			Variable sweepVar = VariablesFactory.eINSTANCE.createVariable();
-			sweepVar.getTypes().add(sweepType);
-			sweepVar.setId(sweep);
-			sweepVar.setName(sweep);
-			nwbModelType.getVariables().add(sweepVar);	
 			
-			CompositeType stimulusSignalType = TypesFactory.eINSTANCE.createCompositeType();
-			stimulusSignalType.setId("stimulusT_Sweep_" + number);
-			stimulusSignalType.setName("Stimulus_Sweep_" + number);
-			library.getTypes().add(stimulusSignalType);
-			
-			CompositeType responseSignalType = TypesFactory.eINSTANCE.createCompositeType();
-			responseSignalType.setId("responseT_Sweep_" + number);
-			responseSignalType.setName("Response_Sweep_" + number);
-			library.getTypes().add(responseSignalType);
-			
-			Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
-			stimulus.getTypes().add(stimulusSignalType);
-			stimulus.setId("stimulus");
-			stimulus.setName("stimulus");
-			sweepType.getVariables().add(stimulus);
-			
-			Variable response = VariablesFactory.eINSTANCE.createVariable();
-			response.getTypes().add(responseSignalType);
-			response.setId("response");
-			response.setName("response");
-			sweepType.getVariables().add(response);
-			
-			// can same variable have multiple types (STATE_VARIABLE_TYPE)? This is not working
-			Variable recording = VariablesFactory.eINSTANCE.createVariable();
-			recording.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
-			recording.setId("recording");
-			recording.setName("recording");
-			ImportValue importvalue = ValuesFactory.eINSTANCE.createImportValue();
-			recording.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), importvalue);
-			
-			Variable recording1 = VariablesFactory.eINSTANCE.createVariable();
-			recording1.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
-			recording1.setId("recording");
-			recording1.setName("recording");
-			ImportValue importvalue1 = ValuesFactory.eINSTANCE.createImportValue();
-			recording1.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), importvalue1);
-			
-			stimulusSignalType.getVariables().add(recording);
-			responseSignalType.getVariables().add(recording1);
-			
-			CompositeType signalMetadataType = TypesFactory.eINSTANCE.createCompositeType();
-			signalMetadataType.setId("signalMetadataType" + number);
-			signalMetadataType.setName("signalMetadataType" + number);
-			library.getTypes().add(signalMetadataType);
-			
-			Variable metadata = VariablesFactory.eINSTANCE.createVariable();
-			metadata.getTypes().add(signalMetadataType);
-			metadata.setId("metadata");
-			metadata.setName("metadata");
-			stimulusSignalType.getVariables().add(metadata);
-			
-			Variable metadata1 = VariablesFactory.eINSTANCE.createVariable();
-			metadata1.getTypes().add(signalMetadataType);
-			metadata1.setId("metadata");
-			metadata1.setName("metadata");
-			responseSignalType.getVariables().add(metadata1);
-			
-			String stimulus_path = "/epochs/" + sweep + "/stimulus/timeseries";	
-			String value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_name");
-			Variable var = createTextVariable("name", value, "name");
-			signalMetadataType.getVariables().add(var);
-			
-			value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_mv");
-			if (value == ""){
-				value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_pa");
-			}
-			var = createTextVariable("amplitude", value, "amplitude");
-			signalMetadataType.getVariables().add(var);
-			
-			value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_interval");
-			var = createTextVariable("interval", value, "interval");
-			signalMetadataType.getVariables().add(var);
-			
-		}
+			ArrayList<Integer> sweepNumebers = getSweepNumbers(nwbFile);
+			for(int i=0; i<sweepNumebers.size(); i++){
+				int number  = sweepNumebers.get(i);
+				String sweep_name = "Sweep_" + number;
+				
+				Variable sweep_var = VariablesFactory.eINSTANCE.createVariable();
+				sweep_var.getTypes().add(sweep);
+				sweep_var.setId(sweep_name);
+				sweep_var.setName(sweep_name);
+				nwbModelType.getVariables().add(sweep_var);	
+				
+				Variable stimulus = VariablesFactory.eINSTANCE.createVariable();
+				stimulus.getTypes().add(signal);
+				stimulus.setId("stimulus");
+				stimulus.setName("stimulus");
+				sweep.getVariables().add(stimulus);
+				
+				Variable response = VariablesFactory.eINSTANCE.createVariable();
+				response.getTypes().add(signal);
+				response.setId("response");
+				response.setName("response");
+				sweep.getVariables().add(response);
+				
+				Variable recording = VariablesFactory.eINSTANCE.createVariable();
+				recording.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE));
+				recording.setId("recording");
+				recording.setName("recording");
+				signal.getVariables().add(recording);
+				
+				// Second question, if i place this outside loop browser hangs.
+				CompositeType signalMetadata = TypesFactory.eINSTANCE.createCompositeType();
+				signalMetadata.setId("signalMetadata");
+				signalMetadata.setName("signalMetadata");
+				library.getTypes().add(signalMetadata);
+				
+				Variable metadata = VariablesFactory.eINSTANCE.createVariable();
+				metadata.getTypes().add(signalMetadata);
+				metadata.setId("metadata");
+				metadata.setName("metadata");
+				signal.getVariables().add(metadata);
+		        // Third question, if i keep this variable id, name as name it is not working (getInstance) 
+				Variable name = VariablesFactory.eINSTANCE.createVariable();
+				name.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE));
+				name.setId("name");
+				name.setName("name");
+				signalMetadata.getVariables().add(name);
+				
+				Variable amplitude = VariablesFactory.eINSTANCE.createVariable();
+				amplitude.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE));
+				amplitude.setId("amplitude");
+				amplitude.setName("amplitude");
+				signalMetadata.getVariables().add(amplitude);
+				
+				Variable interval = VariablesFactory.eINSTANCE.createVariable();
+				interval.getTypes().add(commonLibraryAccess.getType(TypesPackage.Literals.TEXT_TYPE));
+				interval.setId("interval");
+				interval.setName("interval");
+				signalMetadata.getVariables().add(interval);
+				
+				ImportValue importvalue1 = ValuesFactory.eINSTANCE.createImportValue();
+				ImportValue importvalue2 = ValuesFactory.eINSTANCE.createImportValue();
+				//recording.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), importvalue);
+				Composite compValue = ValuesFactory.eINSTANCE.createComposite();
+				((Composite) compValue).getValue().put("stimulus.recording", importvalue1);
+				((Composite) compValue).getValue().put("response.recording", importvalue2);
+				
+				String stimulus_path = "/epochs/" + sweep_name + "/stimulus/timeseries";	
+				String value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_name");
+				Text stimulusName = ValuesFactory.eINSTANCE.createText();
+				stimulusName.setText(value);
+				Text responseName = ValuesFactory.eINSTANCE.createText();
+				responseName.setText(value);
+				((Composite) compValue).getValue().put("stimulus.metadata.name", stimulusName);
+				((Composite) compValue).getValue().put("response.metadata.name", responseName);
+				
+				
+				value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_mv");
+				if (value == ""){
+					value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_amplitude_pa");
+				}
+				Text stimulusAmplitude = ValuesFactory.eINSTANCE.createText();
+				stimulusAmplitude.setText(value);
+				Text responseAmplitude = ValuesFactory.eINSTANCE.createText();
+				responseAmplitude.setText(value);
+		
+				((Composite) compValue).getValue().put("stimulus.metadata.amplitude", stimulusAmplitude);
+				((Composite) compValue).getValue().put("response.metadata.amplitude", responseAmplitude);
+				
+				value = readSingleDataField(nwbFile, stimulus_path + "/aibs_stimulus_interval");
+				Text stimulusInterval = ValuesFactory.eINSTANCE.createText();
+				stimulusInterval.setText(value);
+				Text responseInterval = ValuesFactory.eINSTANCE.createText();
+				responseInterval.setText(value);
+				((Composite) compValue).getValue().put("stimulus.metadata.interval", stimulusInterval);
+				//ad
+				((Composite) compValue).getValue().put("response.metadata.interval", responseInterval);
+				// ask about the line below
+				sweep_var.getInitialValues().put(commonLibraryAccess.getType((EClass) TypesPackage.Literals.STATE_VARIABLE_TYPE), compValue);
+						}
 		} catch (GeppettoExecutionException e) {
 			throw new GeppettoExecutionException("Exception while reading Initial values for display");
 		} 
