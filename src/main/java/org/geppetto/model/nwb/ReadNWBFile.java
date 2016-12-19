@@ -58,6 +58,8 @@ import org.geppetto.model.types.TypesFactory;
 import org.geppetto.model.types.TypesPackage;
 import org.geppetto.model.util.GeppettoVisitingException;
 import org.geppetto.model.util.PointerUtility;
+import org.geppetto.model.values.Image;
+import org.geppetto.model.values.ImageFormat;
 import org.geppetto.model.values.ImportValue;
 import org.geppetto.model.values.Text;
 import org.geppetto.model.values.TimeSeries;
@@ -190,7 +192,25 @@ public class ReadNWBFile
 				String value = ((String[]) data.read())[0];
 				if (name.equals("aibs_specimen_id")){
 					name = "Allen Cell Type";
+					String tempValue = value;
 					value = "http://celltypes.brain-map.org/mouse/experiment/electrophysiology/" + value;
+					
+					String tempFile = "http://celltypes.brain-map.org/mouse/thumbnail/ephys_trace?id=" + tempValue;
+					Type imageType = commonLibraryAccess.getType(TypesPackage.Literals.IMAGE_TYPE);
+					Variable thumbnailVar = VariablesFactory.eINSTANCE.createVariable();
+					thumbnailVar.setId("thumbnail");
+					thumbnailVar.setName("Experiment Preview");
+					thumbnailVar.getTypes().add(imageType);
+					
+					//geppettoModelAccess.addVariableToType(thumbnailVar, metadataType);
+					Image thumbnailValue = ValuesFactory.eINSTANCE.createImage();
+					thumbnailValue.setName("Preview_Image");
+					thumbnailValue.setData(tempFile);
+					thumbnailValue.setReference("Preview_Image");
+					thumbnailValue.setFormat(ImageFormat.PNG);
+					thumbnailVar.getInitialValues().put(imageType, thumbnailValue);
+					nwbModelMetadataType.getVariables().add(thumbnailVar);
+					
 				}
 				Variable var = createTextVariable(name, value, id);
 				nwbModelMetadataType.getVariables().add(var);

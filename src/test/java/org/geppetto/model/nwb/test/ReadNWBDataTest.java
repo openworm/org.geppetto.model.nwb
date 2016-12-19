@@ -1,11 +1,10 @@
 package org.geppetto.model.nwb.test;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-
-import ncsa.hdf.object.h5.H5File;
 
 import org.geppetto.core.common.GeppettoExecutionException;
 import org.geppetto.core.common.GeppettoInitializationException;
@@ -23,14 +22,24 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import ncsa.hdf.object.h5.H5File;
+import ncsa.hdf.utils.SetNatives;
+
 public class ReadNWBDataTest
 {
 	private ReadNWBFile reader = new ReadNWBFile();
 	private H5File nwbFile = null;
 	private URL url;
 	CompositeType nwbModelType;
+	
+
 	@Before
 	public void setup() throws GeppettoExecutionException, GeppettoInitializationException, GeppettoVisitingException{
+		try {
+			SetNatives.getInstance().setHDF5Native(System.getProperty("user.dir"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 		try {
 			url = new File("./src/main/resources/313862020.nwb").toURI().toURL();
