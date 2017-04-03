@@ -1,4 +1,5 @@
 language: java
+
 sudo: required
 install:
     - git clone https://github.com/openworm/org.geppetto.model.git -b $TRAVIS_BRANCH
