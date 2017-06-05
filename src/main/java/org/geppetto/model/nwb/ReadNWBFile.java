@@ -531,6 +531,9 @@ public class ReadNWBFile
 			var.setName("time");
 			myTimeSeries = ValuesFactory.eINSTANCE.createTimeSeries();
 			myTimeSeries.getValue().addAll(Arrays.asList(timeAxis));
+			Unit seconds=ValuesFactory.eINSTANCE.createUnit();
+			seconds.setUnit("s");
+			myTimeSeries.setUnit(seconds);
 			var.getInitialValues().put(commonLibraryAccess.getType(TypesPackage.Literals.STATE_VARIABLE_TYPE), myTimeSeries);
 			nwbModelType.getVariables().add(var);
 		}
