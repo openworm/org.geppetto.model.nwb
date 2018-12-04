@@ -36,7 +36,6 @@ import org.geppetto.model.values.Unit;
 import org.geppetto.model.values.ValuesFactory;
 import org.geppetto.model.variables.Variable;
 import org.geppetto.model.variables.VariablesFactory;
-import org.springframework.jdbc.support.incrementer.MySQLMaxValueIncrementer;
 
 public class ReadNWBFile
 {
